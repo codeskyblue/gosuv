@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/lunny/tango"
 	"github.com/lunny/log"
+	"github.com/lunny/tango"
 )
 
 type JSONResponse struct {
@@ -63,15 +63,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 503)
 		return
 	}
-	go program.Run()
-	/*
-		if err = program.Start(); err != nil {
-			http.Error(w, err.Error(), 503)
-			return
-		}
-
-		go program.Wait()
-	*/
+	program.InputData(EVENT_START)
 
 	renderJSON(w, &JSONResponse{
 		Code:    200,
@@ -94,7 +86,6 @@ func ServeAddr(host string, port int) error {
 	InitServer()
 
 	t := tango.New()
-
 	t.Group("/api", func(g *tango.Group) {
 		g.Get("/version", versionHandler)
 		g.Post("/shutdown", shutdownHandler)
@@ -102,6 +93,7 @@ func ServeAddr(host string, port int) error {
 		g.Get("/programs", statusHandler)
 	})
 
-	t.Run(fmt.Sprintf("%s:%d", host, port))
-	return nil
+	addr := fmt.Sprintf("%s:%d", host, port)
+	t.Run(addr)
+	return fmt.Errorf("Address: %s has been used", addr)
 }

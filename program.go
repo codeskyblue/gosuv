@@ -29,6 +29,13 @@ const (
 	ST_FATAL   = "fatal"
 )
 
+type Event int
+
+const (
+	EVENT_START = Event(iota)
+	EVENT_STOP
+)
+
 type Program struct {
 	*kproc.Process `json:"-"`
 	Status         string         `json:"state"`
@@ -50,6 +57,12 @@ func (p *Program) createLog() (*os.File, error) {
 	os.MkdirAll(logDir, 0755) // just do it, err ignore it
 	logFile := filepath.Join(logDir, p.Info.Name+".output.log")
 	return os.Create(logFile)
+}
+
+func (p *Program) InputData(evevt Event) {
+	if p.Status == ST_PENDING {
+		go p.Run()
+	}
 }
 
 func (p *Program) Run() error {
@@ -97,10 +110,11 @@ func (p *Program) Wait() (err error) {
 }
 
 type ProgramInfo struct {
-	Name    string   `json:"name"`
-	Command []string `json:"command"`
-	Dir     string   `json:"dir"`
-	Environ []string `json:"environ"`
+	Name      string   `json:"name"`
+	Command   []string `json:"command"`
+	Dir       string   `json:"dir"`
+	Environ   []string `json:"environ"`
+	AutoStart bool     `json:"autostart"`
 }
 
 var programTable *ProgramTable
@@ -110,6 +124,7 @@ func InitServer() {
 		table: make(map[string]*Program, 10),
 		ch:    make(chan string),
 	}
+	programTable.loadConfig()
 }
 
 type ProgramTable struct {
@@ -123,9 +138,6 @@ var (
 )
 
 func (pt *ProgramTable) saveConfig() error {
-	if _, err := os.Stat(GOSUV_PROGRAM_CONFIG); err == nil {
-		// load config
-	}
 	table := make(map[string]*ProgramInfo)
 	for name, p := range pt.table {
 		table[name] = p.Info
@@ -137,6 +149,27 @@ func (pt *ProgramTable) saveConfig() error {
 	defer cfgFd.Close()
 	data, _ := json.MarshalIndent(table, "", "    ")
 	return ioutil.WriteFile(GOSUV_PROGRAM_CONFIG, data, 0644)
+}
+
+func (pt *ProgramTable) loadConfig() error {
+	cfgFd, err := os.Open(GOSUV_PROGRAM_CONFIG)
+	if err != nil {
+		return err
+	}
+	defer cfgFd.Close()
+	table := make(map[string]*ProgramInfo)
+	if err = json.NewDecoder(cfgFd).Decode(&table); err != nil {
+		return err
+	}
+	for name, pinfo := range table {
+		if program, err := buildProgram(pinfo); err == nil {
+			pt.table[name] = program
+			if pinfo.AutoStart {
+				program.InputData(EVENT_START)
+			}
+		}
+	}
+	return nil
 }
 
 func (pt *ProgramTable) AddProgram(p *Program) error {
