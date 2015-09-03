@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/franela/goreq"
+	"github.com/qiniu/log"
 )
 
 func MkdirIfNoExists(dir string) error {
@@ -43,8 +45,14 @@ func wrapAction(f func(*cli.Context)) func(*cli.Context) {
 		//host := c.GlobalString("host")
 		//port := c.GlobalInt("port")
 		//ServeAddr(host, port)
-		go exec.Command(os.Args[0], "serv").Run()
-		time.Sleep(time.Millisecond * 500)
+		_, err := goreq.Request{
+			Method: "GET",
+			Uri:    buildURI(c, "/api/version"),
+		}.Do()
+		if err != nil {
+			go exec.Command(os.Args[0], "serv").Run()
+			time.Sleep(time.Millisecond * 500)
+		}
 		f(c)
 	}
 }
@@ -61,7 +69,52 @@ func StatusAction(ctx *cli.Context) {
 
 func AddAction(ctx *cli.Context) {
 	name := ctx.String("name")
+	dir, _ := os.Getwd()
+	if len(ctx.Args()) < 1 {
+		log.Fatal("need at least one args")
+	}
+	if name == "" {
+		name = ctx.Args()[0]
+	}
+	log.Println(ctx.Args().Tail())
+	log.Println([]string(ctx.Args()))
+	log.Println(ctx.Args().Tail())
+	log.Println(ctx.StringSlice("env"))
+	log.Println("Dir:", dir)
+	cmdName := ctx.Args().First()
+	log.Println("cmd name:", cmdName)
+	cmdPath, err := exec.LookPath(cmdName)
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("program: %s has been added\n", strconv.Quote(name))
+	p := &ProgramInfo{
+		Name:    name,
+		Dir:     dir,
+		Command: append([]string{cmdPath}, ctx.Args().Tail()...),
+		Environ: ctx.StringSlice("env"),
+	}
+	res, err := goreq.Request{
+		Method: "POST",
+		Uri:    buildURI(ctx, "/api/programs"),
+		Body:   p,
+	}.Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var jres JSONResponse
+	if res.StatusCode != http.StatusOK {
+		log.Fatal(res.Body.ToString())
+	}
+	if err = res.Body.FromJsonTo(&jres); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(jres.Message)
+}
+
+func buildURI(ctx *cli.Context, uri string) string {
+	return fmt.Sprintf("http://%s:%d%s",
+		ctx.GlobalString("host"), ctx.GlobalInt("port"), uri)
 }
 
 func StopAction(ctx *cli.Context) {
@@ -71,7 +124,8 @@ func ShutdownAction(ctx *cli.Context) {
 	res, err := chttp("POST", fmt.Sprintf("http://%s:%d/api/shutdown",
 		ctx.GlobalString("host"), ctx.GlobalInt("port")))
 	if err != nil {
-		panic(err)
+		log.Println("Already shutdown")
+		return
 	}
 	fmt.Println(res.Message)
 }
@@ -128,8 +182,12 @@ func init() {
 					Name:  "name, n",
 					Usage: "program name",
 				},
+				cli.StringSliceFlag{
+					Name:  "env, e",
+					Usage: "Specify environ",
+				},
 			},
-			Action: AddAction,
+			Action: wrapAction(AddAction),
 		},
 		{
 			Name:   "stop",
