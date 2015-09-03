@@ -227,9 +227,10 @@ func init() {
 }
 
 var (
-	GOSUV_HOME    = os.ExpandEnv("$HOME/.gosuv")
-	GOSUV_CONFIG  = filepath.Join(GOSUV_HOME, "gosuv.json")
-	GOSUV_VERSION = "0.0.1"
+	GOSUV_HOME           = os.ExpandEnv("$HOME/.gosuv")
+	GOSUV_CONFIG         = filepath.Join(GOSUV_HOME, "gosuv.json")
+	GOSUV_PROGRAM_CONFIG = filepath.Join(GOSUV_HOME, "programs.json")
+	GOSUV_VERSION        = "0.0.1"
 )
 
 func main() {

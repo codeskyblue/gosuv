@@ -91,6 +91,7 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServeAddr(host string, port int) error {
+	InitServer()
 	r := mux.NewRouter()
 	r.HandleFunc("/api/version", versionHandler)
 	r.Methods("POST").Path("/api/shutdown").HandlerFunc(shutdownHandler)

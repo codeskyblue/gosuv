@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -103,7 +105,7 @@ type ProgramInfo struct {
 
 var programTable *ProgramTable
 
-func init() {
+func InitServer() {
 	programTable = &ProgramTable{
 		table: make(map[string]*Program, 10),
 		ch:    make(chan string),
@@ -120,6 +122,23 @@ var (
 	ErrProgramDuplicate = errors.New("program duplicate")
 )
 
+func (pt *ProgramTable) saveConfig() error {
+	if _, err := os.Stat(GOSUV_PROGRAM_CONFIG); err == nil {
+		// load config
+	}
+	table := make(map[string]*ProgramInfo)
+	for name, p := range pt.table {
+		table[name] = p.Info
+	}
+	cfgFd, err := os.Create(GOSUV_PROGRAM_CONFIG)
+	if err != nil {
+		return err
+	}
+	defer cfgFd.Close()
+	data, _ := json.MarshalIndent(table, "", "    ")
+	return ioutil.WriteFile(GOSUV_PROGRAM_CONFIG, data, 0644)
+}
+
 func (pt *ProgramTable) AddProgram(p *Program) error {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
@@ -128,6 +147,7 @@ func (pt *ProgramTable) AddProgram(p *Program) error {
 		return ErrProgramDuplicate
 	}
 	pt.table[name] = p
+	pt.saveConfig()
 	return nil
 }
 
