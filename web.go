@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/qiniu/log"
+	"github.com/lunny/tango"
+	"github.com/lunny/log"
 )
 
 type JSONResponse struct {
@@ -92,10 +92,16 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 
 func ServeAddr(host string, port int) error {
 	InitServer()
-	r := mux.NewRouter()
-	r.HandleFunc("/api/version", versionHandler)
-	r.Methods("POST").Path("/api/shutdown").HandlerFunc(shutdownHandler)
-	r.Methods("POST").Path("/api/programs").HandlerFunc(addHandler)
-	r.Methods("GET").Path("/api/programs").HandlerFunc(statusHandler)
-	return http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), r)
+
+	t := tango.New()
+
+	t.Group("/api", func(g *tango.Group) {
+		g.Get("/version", versionHandler)
+		g.Post("/shutdown", shutdownHandler)
+		g.Post("/programs", addHandler)
+		g.Get("/programs", statusHandler)
+	})
+
+	t.Run(fmt.Sprintf("%s:%d", host, port))
+	return nil
 }
