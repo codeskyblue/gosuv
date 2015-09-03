@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -64,7 +65,24 @@ func ServAction(ctx *cli.Context) {
 }
 
 func StatusAction(ctx *cli.Context) {
-	println("status todo")
+	programs := make([]*Program, 0)
+	res, err := goreq.Request{
+		Method: "GET",
+		Uri:    buildURI(ctx, "/api/programs"),
+	}.Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		log.Fatal(res.Body.ToString())
+	}
+	if err = res.Body.FromJsonTo(&programs); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%10s\t%s\n", "NAME", "STATUS")
+	for _, p := range programs {
+		fmt.Printf("%10s\t%s\n", p.Info.Name, p.Status)
+	}
 }
 
 func AddAction(ctx *cli.Context) {
@@ -170,9 +188,10 @@ func init() {
 			Action: wrapAction(VersionAction),
 		},
 		{
-			Name:   "status",
-			Usage:  "show program status",
-			Action: StatusAction,
+			Name:    "status",
+			Aliases: []string{"st"},
+			Usage:   "show program status",
+			Action:  StatusAction,
 		},
 		{
 			Name:  "add",
@@ -207,13 +226,14 @@ func init() {
 	}
 }
 
-const (
-	GOSUV_HOME    = "$HOME/.gosuv"
-	GOSUV_CONFIG  = "gosuv.json"
+var (
+	GOSUV_HOME    = os.ExpandEnv("$HOME/.gosuv")
+	GOSUV_CONFIG  = filepath.Join(GOSUV_HOME, "gosuv.json")
 	GOSUV_VERSION = "0.0.1"
 )
 
 func main() {
 	MkdirIfNoExists(GOSUV_HOME)
+	app.HideHelp = false
 	app.RunAndExitOnError()
 }
