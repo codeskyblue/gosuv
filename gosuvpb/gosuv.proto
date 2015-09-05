@@ -14,9 +14,19 @@ message NopRequest {
 
 message Response {
   optional int32 code = 1;
+  optional string message = 2;
+}
+
+message Request {
+  required string name = 1;
 }
 
 service GoSuv {
   rpc Control(CtrlRequest) returns (CtrlResponse) {};
   rpc Shutdown(NopRequest) returns (Response) {};
+}
+
+service Program {
+  rpc Start(Request) returns (Response) {};
+  rpc Stop(Request) returns (Response) {};
 }

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"syscall"
 
 	"github.com/codeskyblue/kproc"
 	"github.com/qiniu/log"
@@ -23,7 +24,7 @@ func GoFunc(f func() error) chan error {
 }
 
 const (
-	ST_PENDING = "pending"
+	ST_STANDBY = "standby"
 	ST_RUNNING = "running"
 	ST_STOPPED = "stopped"
 	ST_FATAL   = "fatal"
@@ -46,9 +47,27 @@ type Program struct {
 func NewProgram(cmd *exec.Cmd, info *ProgramInfo) *Program {
 	return &Program{
 		Process: kproc.ProcCommand(cmd),
-		Status:  ST_PENDING,
+		Status:  ST_STANDBY,
 		Sig:     make(chan os.Signal),
 		Info:    info,
+	}
+}
+
+func (p *Program) setStatus(st string) {
+	// TODO: status change hook
+	p.Status = st
+}
+
+func (p *Program) InputData(event Event) {
+	switch event {
+	case EVENT_START:
+		if p.Status != ST_RUNNING {
+			go p.Run()
+		}
+	case EVENT_STOP:
+		if p.Status == ST_RUNNING {
+			p.Stop()
+		}
 	}
 }
 
@@ -59,18 +78,33 @@ func (p *Program) createLog() (*os.File, error) {
 	return os.Create(logFile)
 }
 
-func (p *Program) InputData(evevt Event) {
-	if p.Status == ST_PENDING {
-		go p.Run()
-	}
-}
-
-func (p *Program) Run() error {
+func (p *Program) Run() (err error) {
 	if err := p.Start(); err != nil {
-		p.Status = ST_FATAL
+		p.setStatus(ST_FATAL)
 		return err
 	}
-	return p.Wait()
+	// TODO: retry needed here
+	p.setStatus(ST_RUNNING)
+	defer func() {
+		if out, ok := p.Cmd.Stdout.(io.Closer); ok {
+			out.Close()
+		}
+		if err != nil {
+			log.Warnf("program finish: %v", err)
+			p.setStatus(ST_FATAL)
+		} else {
+			p.setStatus(ST_STOPPED)
+		}
+	}()
+	err = p.Wait()
+	return
+}
+
+func (p *Program) Stop() error {
+	p.Terminate(syscall.SIGKILL)
+	p.Wait()
+	p.setStatus(ST_STOPPED)
+	return nil
 }
 
 func (p *Program) Start() error {
@@ -84,30 +118,19 @@ func (p *Program) Start() error {
 }
 
 // wait func finish, also accept signal
-func (p *Program) Wait() (err error) {
-	log.Println("Wait program to finish")
-	p.Status = ST_RUNNING
-	defer func() {
-		if out, ok := p.Cmd.Stdout.(io.Closer); ok {
-			out.Close()
-		}
-		if err != nil {
-			log.Warnf("program finish: %v", err)
-			p.Status = ST_FATAL
-		} else {
-			p.Status = ST_STOPPED
-		}
-	}()
-	ch := GoFunc(p.Cmd.Wait)
-	for {
-		select {
-		case err = <-ch:
-			return err
-		case sig := <-p.Sig:
-			p.Terminate(sig)
-		}
-	}
-}
+// func (p *Program) Wait() (err error) {
+// 	log.Println("Wait program to finish")
+
+// 	ch := GoFunc(p.Cmd.Wait)
+// 	for {
+// 		select {
+// 		case err = <-ch:
+// 			return err
+// 		case sig := <-p.Sig:
+// 			p.Terminate(sig)
+// 		}
+// 	}
+// }
 
 type ProgramInfo struct {
 	Name      string   `json:"name"`
@@ -135,6 +158,7 @@ type ProgramTable struct {
 
 var (
 	ErrProgramDuplicate = errors.New("program duplicate")
+	ErrProgramNotExists = errors.New("program not exists")
 )
 
 func (pt *ProgramTable) saveConfig() error {
@@ -192,4 +216,20 @@ func (pt *ProgramTable) Programs() []*Program {
 		ps = append(ps, p)
 	}
 	return ps
+}
+
+func (pt *ProgramTable) Get(name string) (*Program, error) {
+	program, exists := pt.table[name]
+	if !exists {
+		return nil, ErrProgramNotExists
+	}
+	return program, nil
+}
+
+func (pt *ProgramTable) StopAll() {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+	for _, program := range pt.table {
+		program.Stop()
+	}
 }

@@ -7,15 +7,14 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
-	"sync"
+	"syscall"
 	"time"
 
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
-	"github.com/golang/protobuf/proto"
 	"github.com/lunny/log"
 	"github.com/lunny/tango"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -89,25 +88,21 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-type SuvServer struct {
-	lis net.Listener
-}
-
-func (s *SuvServer) Control(ctx context.Context, in *pb.CtrlRequest) (*pb.CtrlResponse, error) {
-	res := &pb.CtrlResponse{}
-	res.Value = proto.String("Hi")
-	return res, nil
-}
-
-func (s *SuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Response, error) {
+func handleSignal(lis net.Listener) {
+	sigc := make(chan os.Signal, 2)
+	signal.Notify(sigc, syscall.SIGINT, syscall.SIGHUP)
 	go func() {
-		time.Sleep(50 * time.Millisecond)
-		s.lis.Close()
-		os.Exit(2)
+		for sig := range sigc {
+			log.Println("Receive signal:", sig)
+			if sig == syscall.SIGHUP {
+				return // ignore
+			}
+			lis.Close()
+			programTable.StopAll()
+			os.Exit(0)
+			return
+		}
 	}()
-	res := &pb.Response{}
-	res.Code = proto.Int32(200)
-	return res, nil
 }
 
 func ServeAddr(host string, port int) error {
@@ -122,26 +117,22 @@ func ServeAddr(host string, port int) error {
 	})
 
 	addr := fmt.Sprintf("%s:%d", host, port)
-	wg := &sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		t.Run(addr)
-		wg.Done()
-	}()
-	go func() {
-		grpcServ := grpc.NewServer()
-		pbServ := &SuvServer{}
-		pb.RegisterGoSuvServer(grpcServ, pbServ)
+	go t.Run(addr)
 
-		lis, err := net.Listen("unix", filepath.Join(GOSUV_HOME, "gosuv.sock"))
-		if err != nil {
-			log.Fatal(err)
-		}
-		pbServ.lis = lis
-		//defer lis.Close()
-		grpcServ.Serve(lis)
-		wg.Done()
-	}()
-	wg.Wait()
+	lis, err := net.Listen("unix", filepath.Join(GOSUV_HOME, "gosuv.sock"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	handleSignal(lis)
+
+	pbServ := &PbSuvServer{}
+	pbProgram := &PbProgram{}
+
+	grpcServ := grpc.NewServer()
+	pb.RegisterGoSuvServer(grpcServ, pbServ)
+	pb.RegisterProgramServer(grpcServ, pbProgram)
+
+	pbServ.lis = lis
+	grpcServ.Serve(lis)
 	return fmt.Errorf("Address: %s has been used", addr)
 }

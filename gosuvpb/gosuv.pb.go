@@ -13,6 +13,7 @@ It has these top-level messages:
 	CtrlResponse
 	NopRequest
 	Response
+	Request
 */
 package gosuvpb
 
@@ -79,8 +80,9 @@ func (m *NopRequest) String() string { return proto.CompactTextString(m) }
 func (*NopRequest) ProtoMessage()    {}
 
 type Response struct {
-	Code             *int32 `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	Code             *int32  `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
+	Message          *string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
 }
 
 func (m *Response) Reset()         { *m = Response{} }
@@ -92,6 +94,29 @@ func (m *Response) GetCode() int32 {
 		return *m.Code
 	}
 	return 0
+}
+
+func (m *Response) GetMessage() string {
+	if m != nil && m.Message != nil {
+		return *m.Message
+	}
+	return ""
+}
+
+type Request struct {
+	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Request) Reset()         { *m = Request{} }
+func (m *Request) String() string { return proto.CompactTextString(m) }
+func (*Request) ProtoMessage()    {}
+
+func (m *Request) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -177,6 +202,90 @@ var _GoSuv_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Shutdown",
 			Handler:    _GoSuv_Shutdown_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{},
+}
+
+// Client API for Program service
+
+type ProgramClient interface {
+	Start(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Stop(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+}
+
+type programClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewProgramClient(cc *grpc.ClientConn) ProgramClient {
+	return &programClient{cc}
+}
+
+func (c *programClient) Start(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := grpc.Invoke(ctx, "/gosuvpb.Program/Start", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *programClient) Stop(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := grpc.Invoke(ctx, "/gosuvpb.Program/Stop", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Program service
+
+type ProgramServer interface {
+	Start(context.Context, *Request) (*Response, error)
+	Stop(context.Context, *Request) (*Response, error)
+}
+
+func RegisterProgramServer(s *grpc.Server, srv ProgramServer) {
+	s.RegisterService(&_Program_serviceDesc, srv)
+}
+
+func _Program_Start_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(Request)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ProgramServer).Start(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Program_Stop_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(Request)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ProgramServer).Stop(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+var _Program_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "gosuvpb.Program",
+	HandlerType: (*ProgramServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Start",
+			Handler:    _Program_Start_Handler,
+		},
+		{
+			MethodName: "Stop",
+			Handler:    _Program_Stop_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},

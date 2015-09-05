@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -33,40 +32,9 @@ func MkdirIfNoExists(dir string) error {
 	return nil
 }
 
-func ShellTestFile(flag string, file string) bool {
-	finfo, err := os.Stat(file)
-	switch flag {
-	case "x":
-		if err == nil && (finfo.Mode()&os.ModeExclusive) == 0 {
-			return true
-		}
-	}
-	return false
-}
-
-func chttp(method string, url string, v ...interface{}) (res *JSONResponse, err error) {
-	var resp *http.Response
-	switch method {
-	case "GET":
-		resp, err = http.Get(url)
-	case "POST":
-		resp, err = http.PostForm(url, nil)
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	res = &JSONResponse{}
-	err = json.NewDecoder(resp.Body).Decode(res)
-	return
-}
-
 func wrapAction(f func(*cli.Context)) func(*cli.Context) {
 	return func(c *cli.Context) {
 		// check if serer alive
-		//host := c.GlobalString("host")
-		//port := c.GlobalInt("port")
-		//ServeAddr(host, port)
 		_, err := goreq.Request{
 			Method: "GET",
 			Uri:    buildURI(c, "/api/version"),
@@ -156,16 +124,41 @@ func buildURI(ctx *cli.Context, uri string) string {
 		ctx.GlobalString("host"), ctx.GlobalInt("port"), uri)
 }
 
-func buildpbURI(ctx *cli.Context) string {
-	return buildURI(ctx, "/protobuf")
+func StopAction(ctx *cli.Context) {
+	conn, err := connect(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	name := ctx.Args().First()
+	client := pb.NewProgramClient(conn)
+	res, err := client.Stop(context.Background(), &pb.Request{Name: proto.String(name)})
+	if err != nil {
+		Errorf("ERR: %#v\n", err)
+	}
+	fmt.Println(res.GetMessage())
 }
 
-func StopAction(ctx *cli.Context) {
-	log.Println(buildpbURI(ctx))
-	req := &pb.CtrlRequest{
-		Action: proto.String("stop"),
+func Errorf(format string, v ...interface{}) {
+	fmt.Printf(format, v...)
+	os.Exit(1)
+}
+
+func StartAction(ctx *cli.Context) {
+	conn, err := connect(ctx)
+	if err != nil {
+		log.Fatal(err)
 	}
-	_ = req
+	defer conn.Close()
+
+	name := ctx.Args().First()
+	client := pb.NewProgramClient(conn)
+	res, err := client.Start(context.Background(), &pb.Request{Name: proto.String(name)})
+	if err != nil {
+		Errorf("ERR: %#v\n", err)
+	}
+	fmt.Println(res.GetMessage())
 }
 
 // grpc.Dial can't set network, so I have to implement this func
@@ -174,6 +167,12 @@ func grpcDial(network, addr string) (*grpc.ClientConn, error) {
 		func(address string, timeout time.Duration) (conn net.Conn, err error) {
 			return net.DialTimeout(network, address, timeout)
 		}))
+}
+
+func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
+	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
+	conn, err := grpcDial("unix", sockPath)
+	return conn, err
 }
 
 func ShutdownAction(ctx *cli.Context) {
@@ -194,12 +193,16 @@ func ShutdownAction(ctx *cli.Context) {
 
 func VersionAction(ctx *cli.Context) {
 	fmt.Printf("Client: %s\n", GOSUV_VERSION)
-	res, err := chttp("GET", fmt.Sprintf("http://%s:%d/api/version",
-		ctx.GlobalString("host"), ctx.GlobalInt("port")))
+	res, err := goreq.Request{
+		Method: "GET",
+		Uri:    buildURI(ctx, "/api/version"),
+	}.Do()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Server: %s\n", res.Message)
+	var reply JSONResponse
+	res.Body.FromJsonTo(&reply)
+	fmt.Printf("Server: %s\n", reply.Message)
 }
 
 var app *cli.App
@@ -253,9 +256,14 @@ func init() {
 			Action: wrapAction(AddAction),
 		},
 		{
+			Name:   "start",
+			Usage:  "start a not running program",
+			Action: wrapAction(StartAction),
+		},
+		{
 			Name:   "stop",
 			Usage:  "Stop running program",
-			Action: StopAction,
+			Action: wrapAction(StopAction),
 		},
 		{
 			Name:   "shutdown",
