@@ -3,14 +3,17 @@ golang port of python-supervisor
 
 # Plugin Design
 
-If executable file put in folder `$HOME/.gosuv/cmdplugin` with prefix `gosuv-`, gosuv will treat this file as a subcommand.
+All command plugin will store in `$HOME/.gosuv/cmdplugin`, gosuv will treat this plugin as a subcommand.
 
 for example:
 
 	$HOME/.gosuv/cmdplugin/ --.
-		|- gosuv-showpid			-rwx
+		|- showpid/
+			|- run
 
-When run `gosuv showpid`, file `gosuv-showpid` will be called.
+There is a directory `showpid`
+
+When run `gosuv showpid`, file `run` will be called.
 
 # Design
 

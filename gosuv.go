@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -242,24 +241,46 @@ func init() {
 		},
 	}
 	finfos, err := ioutil.ReadDir(CMDPLUGIN_DIR)
-	log.Println(err)
 	if err != nil {
 		return
 	}
 	for _, finfo := range finfos {
-		if finfo.IsDir() {
+		if !finfo.IsDir() {
 			continue
 		}
-		modeExec := os.FileMode(0500)
-		if strings.HasPrefix(finfo.Name(), "gosuv-") && (finfo.Mode()&modeExec) == modeExec {
-			log.Println(finfo)
-			cmdName := string(finfo.Name()[6:])
-			app.Commands = append(app.Commands, cli.Command{
-				Name:  cmdName,
-				Usage: "Plugin command",
-			})
-		}
+		//modeExec := os.FileMode(0500)
+		//if strings.HasPrefix(finfo.Name(), "gosuv-") && (finfo.Mode()&modeExec) == modeExec {
+		//cmdName := string(finfo.Name()[6:])
+		cmdName := finfo.Name()
+		app.Commands = append(app.Commands, cli.Command{
+			Name:   cmdName,
+			Usage:  "Plugin command",
+			Action: newPluginAction(cmdName),
+		})
 	}
+}
+
+func newPluginAction(name string) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		runPlugin(ctx, name)
+	}
+}
+
+func runPlugin(ctx *cli.Context, name string) {
+	serverAddr := fmt.Sprintf("%s:%d",
+		ctx.GlobalString("host"), ctx.GlobalInt("port"))
+	pluginDir := filepath.Join(CMDPLUGIN_DIR, name)
+	envs := []string{
+		"GOSUV_SERVER_ADDR=" + serverAddr,
+		"GOSUV_PLUGIN_NAME=" + name,
+	}
+	cmd := exec.Command(filepath.Join(pluginDir, "run"), ctx.Args()...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	cmd.Dir = pluginDir
+	cmd.Env = append(os.Environ(), envs...)
+	cmd.Run()
 }
 
 var (
