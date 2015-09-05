@@ -3,13 +3,20 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sync"
 	"time"
 
+	pb "github.com/codeskyblue/gosuv/gosuvpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/lunny/log"
 	"github.com/lunny/tango"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 type JSONResponse struct {
@@ -82,6 +89,27 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type SuvServer struct {
+	lis net.Listener
+}
+
+func (s *SuvServer) Control(ctx context.Context, in *pb.CtrlRequest) (*pb.CtrlResponse, error) {
+	res := &pb.CtrlResponse{}
+	res.Value = proto.String("Hi")
+	return res, nil
+}
+
+func (s *SuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Response, error) {
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		s.lis.Close()
+		os.Exit(2)
+	}()
+	res := &pb.Response{}
+	res.Code = proto.Int32(200)
+	return res, nil
+}
+
 func ServeAddr(host string, port int) error {
 	InitServer()
 
@@ -94,6 +122,26 @@ func ServeAddr(host string, port int) error {
 	})
 
 	addr := fmt.Sprintf("%s:%d", host, port)
-	t.Run(addr)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		t.Run(addr)
+		wg.Done()
+	}()
+	go func() {
+		grpcServ := grpc.NewServer()
+		pbServ := &SuvServer{}
+		pb.RegisterGoSuvServer(grpcServ, pbServ)
+
+		lis, err := net.Listen("unix", filepath.Join(GOSUV_HOME, "gosuv.sock"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		pbServ.lis = lis
+		//defer lis.Close()
+		grpcServ.Serve(lis)
+		wg.Done()
+	}()
+	wg.Wait()
 	return fmt.Errorf("Address: %s has been used", addr)
 }

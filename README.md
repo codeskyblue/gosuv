@@ -38,12 +38,13 @@ There is a directory `showpid`
 When run `gosuv showpid`, file `run` will be called.
 
 # RPC Design
-I decide to use protobuf in 2015-09-05
+I decide to use [grpc](http://www.grpc.io/) in 2015-09-05
 
+<https://github.com/grpc/grpc-go>
 <https://github.com/golang/protobuf>
 
 	go get -u -v github.com/golang/protobuf/{proto,protoc-gen-go}
-	cd pbrpc; protoc --go_out=. *.proto
+	pbrpc/codegen.sh
 
 # Design
 

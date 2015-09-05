@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -12,8 +13,12 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	pb "github.com/codeskyblue/gosuv/gosuvpb"
 	"github.com/franela/goreq"
+	"github.com/golang/protobuf/proto"
 	"github.com/qiniu/log"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -157,16 +162,39 @@ func buildpbURI(ctx *cli.Context) string {
 
 func StopAction(ctx *cli.Context) {
 	log.Println(buildpbURI(ctx))
+	req := &pb.CtrlRequest{
+		Action: proto.String("stop"),
+	}
+	_ = req
+}
+
+func rpcDialer(addr string, timeout time.Duration) (conn net.Conn, err error) {
+	return net.DialTimeout("unix", addr, timeout)
 }
 
 func ShutdownAction(ctx *cli.Context) {
-	res, err := chttp("POST", fmt.Sprintf("http://%s:%d/api/shutdown",
-		ctx.GlobalString("host"), ctx.GlobalInt("port")))
+	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
+	conn, err := grpc.Dial(sockPath, grpc.WithDialer(rpcDialer), grpc.WithInsecure())
 	if err != nil {
-		log.Println("Already shutdown")
-		return
+		log.Fatal(err)
 	}
-	fmt.Println(res.Message)
+	defer conn.Close()
+
+	client := pb.NewGoSuvClient(conn)
+	res, err := client.Shutdown(context.Background(), &pb.NopRequest{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Return code:", res.GetCode())
+	/*
+		res, err := chttp("POST", fmt.Sprintf("http://%s:%d/api/shutdown",
+			ctx.GlobalString("host"), ctx.GlobalInt("port")))
+		if err != nil {
+			log.Println("Already shutdown")
+			return
+		}
+		fmt.Println(res.Message)
+	*/
 }
 
 func VersionAction(ctx *cli.Context) {

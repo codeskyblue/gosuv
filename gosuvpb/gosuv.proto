@@ -1,0 +1,22 @@
+package gosuvpb;
+
+message CtrlRequest {
+  required string action =1;
+  required string name = 2;
+}
+
+message CtrlResponse {
+  optional string value = 1;
+}
+
+message NopRequest {
+}
+
+message Response {
+  optional int32 code = 1;
+}
+
+service GoSuv {
+  rpc Control(CtrlRequest) returns (CtrlResponse) {};
+  rpc Shutdown(NopRequest) returns (Response) {};
+}
