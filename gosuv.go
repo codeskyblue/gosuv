@@ -151,7 +151,12 @@ func buildURI(ctx *cli.Context, uri string) string {
 		ctx.GlobalString("host"), ctx.GlobalInt("port"), uri)
 }
 
+func buildpbURI(ctx *cli.Context) string {
+	return buildURI(ctx, "/protobuf")
+}
+
 func StopAction(ctx *cli.Context) {
+	log.Println(buildpbURI(ctx))
 }
 
 func ShutdownAction(ctx *cli.Context) {

@@ -37,6 +37,14 @@ There is a directory `showpid`
 
 When run `gosuv showpid`, file `run` will be called.
 
+# RPC Design
+I decide to use protobuf in 2015-09-05
+
+<https://github.com/golang/protobuf>
+
+	go get -u -v github.com/golang/protobuf/{proto,protoc-gen-go}
+	cd pbrpc; protoc --go_out=. *.proto
+
 # Design
 
 Has a folder `.gosuv` under `$HOME` path.

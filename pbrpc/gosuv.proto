@@ -1,0 +1,15 @@
+package pbrpc;
+
+message CtrlRequest {
+  required string name = 1;
+  required string key = 2; // not actually required/guaranteed to be UTF-8
+}
+
+message CtrlResponse {
+  optional string value = 1;
+}
+
+service GoSUV{
+  rpc Control(CtrlRequest) returns (CtrlResponse) {
+  };
+}
