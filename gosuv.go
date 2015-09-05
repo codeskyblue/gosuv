@@ -3,16 +3,22 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/franela/goreq"
 	"github.com/qiniu/log"
+)
+
+var (
+	CMDPLUGIN_DIR = filepath.Join(GOSUV_HOME, "cmdplugin")
 )
 
 func MkdirIfNoExists(dir string) error {
@@ -21,6 +27,17 @@ func MkdirIfNoExists(dir string) error {
 		return os.MkdirAll(dir, 0755)
 	}
 	return nil
+}
+
+func ShellTestFile(flag string, file string) bool {
+	finfo, err := os.Stat(file)
+	switch flag {
+	case "x":
+		if err == nil && (finfo.Mode()&os.ModeExclusive) == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func chttp(method string, url string, v ...interface{}) (res *JSONResponse, err error) {
@@ -223,6 +240,25 @@ func init() {
 			Usage:  "This command should only be called by gosuv itself",
 			Action: ServAction,
 		},
+	}
+	finfos, err := ioutil.ReadDir(CMDPLUGIN_DIR)
+	log.Println(err)
+	if err != nil {
+		return
+	}
+	for _, finfo := range finfos {
+		if finfo.IsDir() {
+			continue
+		}
+		modeExec := os.FileMode(0500)
+		if strings.HasPrefix(finfo.Name(), "gosuv-") && (finfo.Mode()&modeExec) == modeExec {
+			log.Println(finfo)
+			cmdName := string(finfo.Name()[6:])
+			app.Commands = append(app.Commands, cli.Command{
+				Name:  cmdName,
+				Usage: "Plugin command",
+			})
+		}
 	}
 }
 
