@@ -168,13 +168,17 @@ func StopAction(ctx *cli.Context) {
 	_ = req
 }
 
-func rpcDialer(addr string, timeout time.Duration) (conn net.Conn, err error) {
-	return net.DialTimeout("unix", addr, timeout)
+// grpc.Dial can't set network, so I have to implement this func
+func grpcDial(network, addr string) (*grpc.ClientConn, error) {
+	return grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDialer(
+		func(address string, timeout time.Duration) (conn net.Conn, err error) {
+			return net.DialTimeout(network, address, timeout)
+		}))
 }
 
 func ShutdownAction(ctx *cli.Context) {
 	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
-	conn, err := grpc.Dial(sockPath, grpc.WithDialer(rpcDialer), grpc.WithInsecure())
+	conn, err := grpcDial("unix", sockPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -186,15 +190,6 @@ func ShutdownAction(ctx *cli.Context) {
 		log.Fatal(err)
 	}
 	log.Println("Return code:", res.GetCode())
-	/*
-		res, err := chttp("POST", fmt.Sprintf("http://%s:%d/api/shutdown",
-			ctx.GlobalString("host"), ctx.GlobalInt("port")))
-		if err != nil {
-			log.Println("Already shutdown")
-			return
-		}
-		fmt.Println(res.Message)
-	*/
 }
 
 func VersionAction(ctx *cli.Context) {
