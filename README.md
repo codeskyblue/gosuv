@@ -1,8 +1,30 @@
 # gosuv
 golang port of python-supervisor
 
-# Plugin Design
+## Program not implement
+**Not done yet.**
 
+## Require
+Go version at least `1.4`
+
+## Install
+	go get -v github.com/codeskyblue/gosuv
+
+## Usage
+	$ gosuv add --name timetest -- bash -c "while true; do date; sleep 1; done"
+	program "timetest" has been added.
+
+	$ gosuv status
+	NAME		STATUS
+	timetest	running
+
+	$ gosuv stop timetest
+	program "timetest" stopped
+
+	# see more usage
+	$ gosuv help
+
+# Plugin Design
 All command plugin will store in `$HOME/.gosuv/cmdplugin`, gosuv will treat this plugin as a subcommand.
 
 for example:
@@ -57,7 +79,6 @@ Stop program, ex: "program1"
 	$ gosuv stop program1
 	program1 stopped
 
-## Program not implement
 
 ## LICENSE
 [MIT](LICENSE)
