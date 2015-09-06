@@ -199,20 +199,12 @@ func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
 	return conn, err
 }
 
-func ShutdownAction(ctx *cli.Context) {
-	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
-	conn, err := grpcDial("unix", sockPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	client := pb.NewGoSuvClient(conn)
+func ShutdownAction(ctx *cli.Context, client pb.GoSuvClient) {
 	res, err := client.Shutdown(context.Background(), &pb.NopRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Return code:", res.GetCode())
+	log.Println(res.GetMessage())
 }
 
 func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
@@ -245,6 +237,20 @@ func init() {
 			Usage:  "server listen host",
 			EnvVar: "GOSUV_SERVER_HOST",
 		},
+		/*
+			cli.StringFlag{
+				Name:   "network",
+				Value:  "unix",
+				Usage:  "server listen network type",
+				EnvVar: "GOSUV_SERVER_NETWORK",
+			},
+			cli.StringFlag{
+				Name:   "addr",
+				Value:  os.ExpandEnv("$HOME/.gosuv/gosuv.sock"),
+				Usage:  "server listen address",
+				EnvVar: "GOSUV_SERVER_ADDR",
+			},
+		*/
 	}
 
 	app.Commands = []cli.Command{
@@ -257,7 +263,7 @@ func init() {
 			Name:    "status",
 			Aliases: []string{"st"},
 			Usage:   "show program status",
-			Action:  StatusAction,
+			Action:  wrapAction(StatusAction),
 		},
 		{
 			Name:  "add",
@@ -287,7 +293,7 @@ func init() {
 		{
 			Name:   "shutdown",
 			Usage:  "Shutdown server",
-			Action: ShutdownAction,
+			Action: wrapPbServerAction(ShutdownAction),
 		},
 		{
 			Name:   "serv",
