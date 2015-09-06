@@ -20,7 +20,7 @@ func (this *PbProgram) Start(ctx context.Context, in *pb.Request) (res *pb.Respo
 		return
 	}
 	program.InputData(EVENT_START)
-	res.Message = proto.String("program started")
+	res.Message = proto.String(in.GetName() + ": started")
 	return res, nil
 }
 
@@ -31,7 +31,7 @@ func (this *PbProgram) Stop(ctx context.Context, in *pb.Request) (res *pb.Respon
 		return
 	}
 	program.InputData(EVENT_STOP)
-	res.Message = proto.String("program stopped")
+	res.Message = proto.String(in.GetName() + ": stopped")
 	return res, nil
 }
 
