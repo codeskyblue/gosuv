@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/codeskyblue/kproc"
 	"github.com/qiniu/log"
@@ -24,10 +25,11 @@ func GoFunc(f func() error) chan error {
 }
 
 const (
-	ST_STANDBY = "standby"
-	ST_RUNNING = "running"
-	ST_STOPPED = "stopped"
-	ST_FATAL   = "fatal"
+	ST_STANDBY   = "standby"
+	ST_RUNNING   = "running"
+	ST_STOPPED   = "stopped"
+	ST_FATAL     = "fatal"
+	ST_RETRYWAIT = "retrywait"
 )
 
 type Event int
@@ -37,19 +39,42 @@ const (
 	EVENT_STOP
 )
 
+type ProgramInfo struct {
+	Name         string   `json:"name"`
+	Command      []string `json:"command"`
+	Dir          string   `json:"dir"`
+	Environ      []string `json:"environ"`
+	AutoStart    bool     `json:"autostart"`
+	StartRetries int      `json:"startretries"`
+}
+
+func (p *ProgramInfo) buildCmd() *exec.Cmd {
+	cmd := exec.Command(p.Command[0], p.Command[1:]...)
+	cmd.Dir = p.Dir
+	cmd.Env = append(os.Environ(), p.Environ...)
+	return cmd
+}
+
 type Program struct {
 	*kproc.Process `json:"-"`
 	Status         string         `json:"state"`
 	Sig            chan os.Signal `json:"-"`
 	Info           *ProgramInfo   `json:"info"`
+
+	retry   int
+	stopped bool
 }
 
-func NewProgram(cmd *exec.Cmd, info *ProgramInfo) *Program {
+func NewProgram(info *ProgramInfo) *Program {
+	// set default values
+	if info.StartRetries == 0 {
+		info.StartRetries = 3
+	}
 	return &Program{
-		Process: kproc.ProcCommand(cmd),
-		Status:  ST_STANDBY,
-		Sig:     make(chan os.Signal),
-		Info:    info,
+		//Process: kproc.ProcCommand(cmd),
+		Status: ST_STANDBY,
+		Sig:    make(chan os.Signal),
+		Info:   info,
 	}
 }
 
@@ -62,7 +87,7 @@ func (p *Program) InputData(event Event) {
 	switch event {
 	case EVENT_START:
 		if p.Status != ST_RUNNING {
-			go p.Run()
+			go p.RunWithRetry()
 		}
 	case EVENT_STOP:
 		if p.Status == ST_RUNNING {
@@ -72,24 +97,45 @@ func (p *Program) InputData(event Event) {
 }
 
 func (p *Program) createLog() (*os.File, error) {
-	logDir := os.ExpandEnv("$HOME/.gosuv/logs")
+	logDir := filepath.Join(GOSUV_HOME, "logs")
 	os.MkdirAll(logDir, 0755) // just do it, err ignore it
 	logFile := filepath.Join(logDir, p.Info.Name+".output.log")
-	return os.Create(logFile)
+	return os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+}
+
+func (p *Program) sleep(d time.Duration) {
+	// FIXME(ssx): when signal comes, finished sleep
+	time.Sleep(d)
+}
+
+func (p *Program) RunWithRetry() {
+	p.stopped = false
+	for p.retry = 0; p.retry < p.Info.StartRetries; p.retry += 1 {
+		p.Run()
+		if p.stopped {
+			p.setStatus(ST_STOPPED)
+			return
+		}
+		if p.retry+1 < p.Info.StartRetries {
+			p.setStatus(ST_RETRYWAIT)
+			p.sleep(time.Second * 2) // RETRYWAIT
+		}
+	}
+	p.setStatus(ST_FATAL)
 }
 
 func (p *Program) Run() (err error) {
 	if err := p.Start(); err != nil {
+		log.Println("start:", err)
 		p.setStatus(ST_FATAL)
 		return err
 	}
-	// TODO: retry needed here
 	p.setStatus(ST_RUNNING)
 	defer func() {
 		if out, ok := p.Cmd.Stdout.(io.Closer); ok {
 			out.Close()
 		}
-		if err != nil {
+		if !p.stopped && err != nil {
 			log.Warnf("program finish: %v", err)
 			p.setStatus(ST_FATAL)
 		} else {
@@ -101,13 +147,13 @@ func (p *Program) Run() (err error) {
 }
 
 func (p *Program) Stop() error {
+	p.stopped = true
 	p.Terminate(syscall.SIGKILL)
-	p.Wait()
-	p.setStatus(ST_STOPPED)
 	return nil
 }
 
 func (p *Program) Start() error {
+	p.Process = kproc.ProcCommand(p.Info.buildCmd())
 	logFd, err := p.createLog()
 	if err != nil {
 		return err
@@ -115,29 +161,6 @@ func (p *Program) Start() error {
 	p.Cmd.Stdout = logFd
 	p.Cmd.Stderr = logFd
 	return p.Cmd.Start()
-}
-
-// wait func finish, also accept signal
-// func (p *Program) Wait() (err error) {
-// 	log.Println("Wait program to finish")
-
-// 	ch := GoFunc(p.Cmd.Wait)
-// 	for {
-// 		select {
-// 		case err = <-ch:
-// 			return err
-// 		case sig := <-p.Sig:
-// 			p.Terminate(sig)
-// 		}
-// 	}
-// }
-
-type ProgramInfo struct {
-	Name      string   `json:"name"`
-	Command   []string `json:"command"`
-	Dir       string   `json:"dir"`
-	Environ   []string `json:"environ"`
-	AutoStart bool     `json:"autostart"`
 }
 
 var programTable *ProgramTable
@@ -186,11 +209,10 @@ func (pt *ProgramTable) loadConfig() error {
 		return err
 	}
 	for name, pinfo := range table {
-		if program, err := buildProgram(pinfo); err == nil {
-			pt.table[name] = program
-			if pinfo.AutoStart {
-				program.InputData(EVENT_START)
-			}
+		program := NewProgram(pinfo)
+		pt.table[name] = program
+		if pinfo.AutoStart {
+			program.InputData(EVENT_START)
 		}
 	}
 	return nil

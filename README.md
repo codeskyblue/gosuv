@@ -1,4 +1,6 @@
 # gosuv
+[![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
+
 golang port of python-supervisor
 
 ## Program not implement

@@ -49,9 +49,17 @@ func (s *PbSuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Resp
 	go func() {
 		time.Sleep(50 * time.Millisecond)
 		s.lis.Close()
+		programTable.StopAll()
 		os.Exit(2)
 	}()
 	res := &pb.Response{}
-	res.Code = proto.Int32(200)
+	res.Message = proto.String("Server shutdown")
 	return res, nil
+}
+
+func (s *PbSuvServer) Version(ctx context.Context, in *pb.NopRequest) (res *pb.Response, err error) {
+	res = &pb.Response{
+		Message: proto.String(GOSUV_VERSION),
+	}
+	return
 }

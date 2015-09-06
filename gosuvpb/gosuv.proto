@@ -24,6 +24,7 @@ message Request {
 service GoSuv {
   rpc Control(CtrlRequest) returns (CtrlResponse) {};
   rpc Shutdown(NopRequest) returns (Response) {};
+  rpc Version(NopRequest)  returns (Response) {};
 }
 
 service Program {

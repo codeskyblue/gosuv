@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -35,17 +34,6 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func buildProgram(pinfo *ProgramInfo) (*Program, error) {
-	// init cmd
-	cmd := exec.Command(pinfo.Command[0], pinfo.Command[1:]...)
-	cmd.Dir = pinfo.Dir
-	cmd.Env = append(os.Environ(), pinfo.Environ...)
-	program := NewProgram(cmd, pinfo)
-
-	// set output
-	return program, nil
-}
-
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	prms := programTable.Programs()
 	renderJSON(w, prms)
@@ -60,11 +48,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("add: %#v", pinfo)
 
-	program, err := buildProgram(pinfo)
-	if err != nil {
-		http.Error(w, err.Error(), 502)
-		return
-	}
+	program := NewProgram(pinfo)
 	if err = programTable.AddProgram(program); err != nil {
 		http.Error(w, err.Error(), 503)
 		return

@@ -34,7 +34,7 @@ func MkdirIfNoExists(dir string) error {
 
 func wrapAction(f func(*cli.Context)) func(*cli.Context) {
 	return func(c *cli.Context) {
-		// check if serer alive
+		// check if server alive
 		_, err := goreq.Request{
 			Method: "GET",
 			Uri:    buildURI(c, "/api/version"),
@@ -44,6 +44,30 @@ func wrapAction(f func(*cli.Context)) func(*cli.Context) {
 			time.Sleep(time.Millisecond * 500)
 		}
 		f(c)
+	}
+}
+
+func wrapPbProgramAction(f func(*cli.Context, pb.ProgramClient)) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		conn, err := connect(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+		client := pb.NewProgramClient(conn)
+		f(ctx, client)
+	}
+}
+
+func wrapPbServerAction(f func(*cli.Context, pb.GoSuvClient)) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		conn, err := connect(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+		client := pb.NewGoSuvClient(conn)
+		f(ctx, client)
 	}
 }
 
@@ -175,34 +199,21 @@ func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
 	return conn, err
 }
 
-func ShutdownAction(ctx *cli.Context) {
-	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
-	conn, err := grpcDial("unix", sockPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	client := pb.NewGoSuvClient(conn)
+func ShutdownAction(ctx *cli.Context, client pb.GoSuvClient) {
 	res, err := client.Shutdown(context.Background(), &pb.NopRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Return code:", res.GetCode())
+	log.Println(res.GetMessage())
 }
 
-func VersionAction(ctx *cli.Context) {
+func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
 	fmt.Printf("Client: %s\n", GOSUV_VERSION)
-	res, err := goreq.Request{
-		Method: "GET",
-		Uri:    buildURI(ctx, "/api/version"),
-	}.Do()
+	res, err := client.Version(context.Background(), &pb.NopRequest{})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	var reply JSONResponse
-	res.Body.FromJsonTo(&reply)
-	fmt.Printf("Server: %s\n", reply.Message)
+	fmt.Printf("Server: %s\n", res.GetMessage())
 }
 
 var app *cli.App
@@ -226,19 +237,33 @@ func init() {
 			Usage:  "server listen host",
 			EnvVar: "GOSUV_SERVER_HOST",
 		},
+		/*
+			cli.StringFlag{
+				Name:   "network",
+				Value:  "unix",
+				Usage:  "server listen network type",
+				EnvVar: "GOSUV_SERVER_NETWORK",
+			},
+			cli.StringFlag{
+				Name:   "addr",
+				Value:  os.ExpandEnv("$HOME/.gosuv/gosuv.sock"),
+				Usage:  "server listen address",
+				EnvVar: "GOSUV_SERVER_ADDR",
+			},
+		*/
 	}
 
 	app.Commands = []cli.Command{
 		{
 			Name:   "version",
 			Usage:  "Show version",
-			Action: wrapAction(VersionAction),
+			Action: wrapPbServerAction(VersionAction),
 		},
 		{
 			Name:    "status",
 			Aliases: []string{"st"},
 			Usage:   "show program status",
-			Action:  StatusAction,
+			Action:  wrapAction(StatusAction),
 		},
 		{
 			Name:  "add",
@@ -268,7 +293,7 @@ func init() {
 		{
 			Name:   "shutdown",
 			Usage:  "Shutdown server",
-			Action: ShutdownAction,
+			Action: wrapPbServerAction(ShutdownAction),
 		},
 		{
 			Name:   "serv",
