@@ -53,7 +53,7 @@ func (s *PbSuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Resp
 		os.Exit(2)
 	}()
 	res := &pb.Response{}
-	res.Message = proto.String("Server shutdown")
+	res.Message = proto.String("gosuv shutdown")
 	return res, nil
 }
 

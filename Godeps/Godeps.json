@@ -52,6 +52,10 @@
 		{
 			"ImportPath": "google.golang.org/grpc",
 			"Rev": "6b6127d8c67b67f9f8509b84279eac053964e868"
+		},
+		{
+			"ImportPath": "gopkg.in/gcfg.v1",
+			"Rev": "5866678811acbcbc248097f2c524cbc4d13abd8b"
 		}
 	]
 }

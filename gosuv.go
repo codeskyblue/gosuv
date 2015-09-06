@@ -72,9 +72,8 @@ func wrapPbServerAction(f func(*cli.Context, pb.GoSuvClient)) func(*cli.Context)
 }
 
 func ServAction(ctx *cli.Context) {
-	host := ctx.GlobalString("host")
-	port := ctx.GlobalInt("port")
-	ServeAddr(host, port)
+	addr := ctx.GlobalString("addr")
+	ServeAddr(addr)
 }
 
 func StatusAction(ctx *cli.Context) {
@@ -92,7 +91,6 @@ func StatusAction(ctx *cli.Context) {
 	if err = res.Body.FromJsonTo(&programs); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%10s\t%s\n", "NAME", "STATUS")
 	for _, p := range programs {
 		fmt.Printf("%10s\t%s\n", p.Info.Name, p.Status)
 	}
@@ -144,8 +142,7 @@ func AddAction(ctx *cli.Context) {
 }
 
 func buildURI(ctx *cli.Context, uri string) string {
-	return fmt.Sprintf("http://%s:%d%s",
-		ctx.GlobalString("host"), ctx.GlobalInt("port"), uri)
+	return fmt.Sprintf("http://%s%s", ctx.GlobalString("addr"), uri)
 }
 
 func StopAction(ctx *cli.Context) {
@@ -204,7 +201,7 @@ func ShutdownAction(ctx *cli.Context, client pb.GoSuvClient) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(res.GetMessage())
+	fmt.Println(res.GetMessage())
 }
 
 func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
@@ -218,39 +215,19 @@ func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
 
 var app *cli.App
 
-func init() {
+func initCli() {
 	app = cli.NewApp()
 	app.Version = GOSUV_VERSION
 	app.Name = "gosuv"
 	app.Usage = "supervisor your program"
 	app.HideHelp = true
 	app.Flags = []cli.Flag{
-		cli.IntFlag{
-			Name:   "port",
-			Value:  17422,
-			Usage:  "server listen port",
-			EnvVar: "GOSUV_SERVER_PORT",
-		},
 		cli.StringFlag{
-			Name:   "host",
-			Value:  "127.0.0.1",
-			Usage:  "server listen host",
-			EnvVar: "GOSUV_SERVER_HOST",
+			Name:   "addr",
+			Value:  rcfg.Server.RpcAddr,
+			Usage:  "server address",
+			EnvVar: "GOSUV_SERVER_ADDR",
 		},
-		/*
-			cli.StringFlag{
-				Name:   "network",
-				Value:  "unix",
-				Usage:  "server listen network type",
-				EnvVar: "GOSUV_SERVER_NETWORK",
-			},
-			cli.StringFlag{
-				Name:   "addr",
-				Value:  os.ExpandEnv("$HOME/.gosuv/gosuv.sock"),
-				Usage:  "server listen address",
-				EnvVar: "GOSUV_SERVER_ADDR",
-			},
-		*/
 	}
 
 	app.Commands = []cli.Command{
@@ -328,12 +305,11 @@ func newPluginAction(name string) func(*cli.Context) {
 }
 
 func runPlugin(ctx *cli.Context, name string) {
-	serverAddr := fmt.Sprintf("%s:%d",
-		ctx.GlobalString("host"), ctx.GlobalInt("port"))
 	pluginDir := filepath.Join(CMDPLUGIN_DIR, name)
 	envs := []string{
-		"GOSUV_SERVER_ADDR=" + serverAddr,
+		"GOSUV_SERVER_ADDR=" + ctx.GlobalString("addr"),
 		"GOSUV_PLUGIN_NAME=" + name,
+		"GOSUV_FILE_PATH=" + os.Args[0],
 	}
 	cmd := exec.Command(filepath.Join(pluginDir, "run"), ctx.Args()...)
 	cmd.Stdout = os.Stdout
@@ -353,6 +329,13 @@ var (
 
 func main() {
 	MkdirIfNoExists(GOSUV_HOME)
+
+	if err := loadRConfig(); err != nil {
+		log.Fatal(err)
+	}
+	initCli()
+
 	app.HideHelp = false
+	app.HideVersion = true
 	app.RunAndExitOnError()
 }

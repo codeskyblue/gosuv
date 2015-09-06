@@ -89,7 +89,7 @@ func handleSignal(lis net.Listener) {
 	}()
 }
 
-func ServeAddr(host string, port int) error {
+func ServeAddr(addr string) error {
 	InitServer()
 
 	t := tango.New()
@@ -100,7 +100,6 @@ func ServeAddr(host string, port int) error {
 		g.Get("/programs", statusHandler)
 	})
 
-	addr := fmt.Sprintf("%s:%d", host, port)
 	go t.Run(addr)
 
 	lis, err := net.Listen("unix", filepath.Join(GOSUV_HOME, "gosuv.sock"))

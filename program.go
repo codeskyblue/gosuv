@@ -25,11 +25,11 @@ func GoFunc(f func() error) chan error {
 }
 
 const (
-	ST_STANDBY   = "standby"
-	ST_RUNNING   = "running"
-	ST_STOPPED   = "stopped"
-	ST_FATAL     = "fatal"
-	ST_RETRYWAIT = "retrywait"
+	ST_STANDBY   = "STANDBY"
+	ST_RUNNING   = "RUNNING"
+	ST_STOPPED   = "STOPPED"
+	ST_FATAL     = "FATAL"
+	ST_RETRYWAIT = "RETRYWAIT"
 )
 
 type Event int
