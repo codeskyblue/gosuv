@@ -55,3 +55,10 @@ func (s *PbSuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Resp
 	res.Code = proto.Int32(200)
 	return res, nil
 }
+
+func (s *PbSuvServer) Version(ctx context.Context, in *pb.NopRequest) (res *pb.Response, err error) {
+	res = &pb.Response{
+		Message: proto.String(GOSUV_VERSION),
+	}
+	return
+}

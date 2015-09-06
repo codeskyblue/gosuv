@@ -34,7 +34,7 @@ func MkdirIfNoExists(dir string) error {
 
 func wrapAction(f func(*cli.Context)) func(*cli.Context) {
 	return func(c *cli.Context) {
-		// check if serer alive
+		// check if server alive
 		_, err := goreq.Request{
 			Method: "GET",
 			Uri:    buildURI(c, "/api/version"),
@@ -44,6 +44,30 @@ func wrapAction(f func(*cli.Context)) func(*cli.Context) {
 			time.Sleep(time.Millisecond * 500)
 		}
 		f(c)
+	}
+}
+
+func wrapPbProgramAction(f func(*cli.Context, pb.ProgramClient)) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		conn, err := connect(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+		client := pb.NewProgramClient(conn)
+		f(ctx, client)
+	}
+}
+
+func wrapPbServerAction(f func(*cli.Context, pb.GoSuvClient)) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		conn, err := connect(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+		client := pb.NewGoSuvClient(conn)
+		f(ctx, client)
 	}
 }
 
@@ -191,18 +215,13 @@ func ShutdownAction(ctx *cli.Context) {
 	log.Println("Return code:", res.GetCode())
 }
 
-func VersionAction(ctx *cli.Context) {
+func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
 	fmt.Printf("Client: %s\n", GOSUV_VERSION)
-	res, err := goreq.Request{
-		Method: "GET",
-		Uri:    buildURI(ctx, "/api/version"),
-	}.Do()
+	res, err := client.Version(context.Background(), &pb.NopRequest{})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	var reply JSONResponse
-	res.Body.FromJsonTo(&reply)
-	fmt.Printf("Server: %s\n", reply.Message)
+	fmt.Printf("Server: %s\n", res.GetMessage())
 }
 
 var app *cli.App
@@ -232,7 +251,7 @@ func init() {
 		{
 			Name:   "version",
 			Usage:  "Show version",
-			Action: wrapAction(VersionAction),
+			Action: wrapPbServerAction(VersionAction),
 		},
 		{
 			Name:    "status",

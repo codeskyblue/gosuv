@@ -128,6 +128,7 @@ var _ grpc.ClientConn
 type GoSuvClient interface {
 	Control(ctx context.Context, in *CtrlRequest, opts ...grpc.CallOption) (*CtrlResponse, error)
 	Shutdown(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*Response, error)
+	Version(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*Response, error)
 }
 
 type goSuvClient struct {
@@ -156,11 +157,21 @@ func (c *goSuvClient) Shutdown(ctx context.Context, in *NopRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *goSuvClient) Version(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := grpc.Invoke(ctx, "/gosuvpb.GoSuv/Version", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for GoSuv service
 
 type GoSuvServer interface {
 	Control(context.Context, *CtrlRequest) (*CtrlResponse, error)
 	Shutdown(context.Context, *NopRequest) (*Response, error)
+	Version(context.Context, *NopRequest) (*Response, error)
 }
 
 func RegisterGoSuvServer(s *grpc.Server, srv GoSuvServer) {
@@ -191,6 +202,18 @@ func _GoSuv_Shutdown_Handler(srv interface{}, ctx context.Context, codec grpc.Co
 	return out, nil
 }
 
+func _GoSuv_Version_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(NopRequest)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(GoSuvServer).Version(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _GoSuv_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "gosuvpb.GoSuv",
 	HandlerType: (*GoSuvServer)(nil),
@@ -202,6 +225,10 @@ var _GoSuv_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Shutdown",
 			Handler:    _GoSuv_Shutdown_Handler,
+		},
+		{
+			MethodName: "Version",
+			Handler:    _GoSuv_Version_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
