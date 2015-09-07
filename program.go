@@ -78,8 +78,8 @@ type Program struct {
 	Sig            chan os.Signal `json:"-"`
 	Info           *ProgramInfo   `json:"info"`
 
-	retry   int
-	stopped bool
+	retry int
+	stopc chan bool
 }
 
 func NewProgram(info *ProgramInfo) *Program {
@@ -92,6 +92,7 @@ func NewProgram(info *ProgramInfo) *Program {
 		Status: ST_STANDBY,
 		Sig:    make(chan os.Signal),
 		Info:   info,
+		stopc:  make(chan bool),
 	}
 }
 
@@ -121,51 +122,57 @@ func (p *Program) createLog() (*os.File, error) {
 }
 
 func (p *Program) sleep(d time.Duration) {
-	// FIXME(ssx): when signal comes, finished sleep
-	time.Sleep(d)
+	select {
+	case <-p.stopc:
+		return
+	case <-time.After(time.Second * 2):
+	}
 }
 
 func (p *Program) RunWithRetry() {
-	p.stopped = false
 	for p.retry = 0; p.retry < p.Info.StartRetries; p.retry += 1 {
-		p.Run()
-		if p.stopped {
-			p.setStatus(ST_STOPPED)
+		// wait program to exit
+		select {
+		case err := <-GoFunc(p.Run):
+			log.Info(p.Info.Name, err)
+		case <-p.stopc:
 			return
 		}
+		// retry
 		if p.retry+1 < p.Info.StartRetries {
 			p.setStatus(ST_RETRYWAIT)
-			p.sleep(time.Second * 2) // RETRYWAIT
+			select {
+			case <-p.stopc:
+				return
+			case <-time.After(time.Second * 2):
+			}
 		}
 	}
 	p.setStatus(ST_FATAL)
 }
 
 func (p *Program) Run() (err error) {
-	if err := p.Start(); err != nil {
-		log.Println("start:", err)
-		p.setStatus(ST_FATAL)
-		return err
+	if err = p.Start(); err != nil {
+		return
 	}
 	p.setStatus(ST_RUNNING)
 	defer func() {
 		if out, ok := p.Cmd.Stdout.(io.Closer); ok {
 			out.Close()
 		}
-		if !p.stopped && err != nil {
-			log.Warnf("program finish: %v", err)
-			p.setStatus(ST_FATAL)
-		} else {
-			p.setStatus(ST_STOPPED)
-		}
+		log.Warnf("program finish: %v", err)
 	}()
 	err = p.Wait()
 	return
 }
 
 func (p *Program) Stop() error {
-	p.stopped = true
+	select {
+	case p.stopc <- true: // stopc may not recevied
+	case <-time.After(time.Millisecond * 50):
+	}
 	p.Terminate(syscall.SIGKILL)
+	p.setStatus(ST_STOPPED)
 	return nil
 }
 

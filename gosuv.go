@@ -194,7 +194,15 @@ func grpcDial(network, addr string) (*grpc.ClientConn, error) {
 		}))
 }
 
-func ShutdownAction(ctx *cli.Context, client pb.GoSuvClient) {
+func ShutdownAction(ctx *cli.Context) {
+	conn, err := connect(ctx)
+	if err != nil {
+		fmt.Println("server already closed")
+		return
+	}
+	defer conn.Close()
+
+	client := pb.NewGoSuvClient(conn)
 	res, err := client.Shutdown(context.Background(), &pb.NopRequest{})
 	if err != nil {
 		log.Fatal(err)
@@ -273,7 +281,7 @@ func initCli() {
 		{
 			Name:   "shutdown",
 			Usage:  "Shutdown server",
-			Action: wrap(ShutdownAction),
+			Action: ShutdownAction,
 		},
 		{
 			Name:   "serv",

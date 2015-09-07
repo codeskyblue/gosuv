@@ -70,7 +70,7 @@ func (s *PbSuvServer) Status(ctx context.Context, in *pb.NopRequest) (res *pb.St
 		ps := &pb.ProgramStatus{}
 		ps.Name = proto.String(program.Info.Name)
 		ps.Status = proto.String(program.Status)
-		ps.Extra = proto.String("nothing")
+		ps.Extra = proto.String("...")
 		res.Programs = append(res.Programs, ps)
 	}
 	return
