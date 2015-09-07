@@ -338,9 +338,7 @@ var (
 func main() {
 	MkdirIfNoExists(GOSUV_HOME)
 
-	if err := loadRConfig(); err != nil {
-		log.Fatal(err)
-	}
+	loadRConfig()
 	initCli()
 
 	app.HideHelp = false

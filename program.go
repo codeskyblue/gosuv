@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"sync"
 	"syscall"
 	"time"
@@ -258,9 +259,19 @@ func (pt *ProgramTable) Programs() []*Program {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 	ps := make([]*Program, 0, len(pt.table))
-	for _, p := range pt.table {
-		ps = append(ps, p)
+	names := []string{}
+	for name, _ := range pt.table {
+		names = append(names, name)
 	}
+	// log.Println(names)
+	sort.Strings(names)
+	// log.Println(names)
+	for _, name := range names {
+		ps = append(ps, pt.table[name])
+	}
+	// for _, p := range pt.table {
+	// ps = append(ps, p)
+	// }
 	return ps
 }
 
