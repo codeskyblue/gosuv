@@ -12,8 +12,8 @@ import (
 	"time"
 
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
-	"github.com/lunny/log"
 	"github.com/lunny/tango"
+	"github.com/qiniu/log"
 	"google.golang.org/grpc"
 )
 

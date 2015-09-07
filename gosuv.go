@@ -33,10 +33,6 @@ func MkdirIfNoExists(dir string) error {
 	return nil
 }
 
-func init() {
-	log.SetOutputLevel(log.Ldebug)
-}
-
 func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
 	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
 	conn, err := grpcDial("unix", sockPath)
@@ -64,6 +60,10 @@ func testConnection(network, address string) error {
 
 func wrap(f interface{}) func(*cli.Context) {
 	return func(ctx *cli.Context) {
+		if ctx.GlobalBool("debug") {
+			log.SetOutputLevel(log.Ldebug)
+		}
+
 		sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
 		if err := testConnection("unix", sockPath); err != nil {
 			log.Fatal(err)
@@ -90,23 +90,13 @@ func ServAction(ctx *cli.Context) {
 	ServeAddr(addr)
 }
 
-func StatusAction(ctx *cli.Context) {
-	programs := make([]*Program, 0)
-	res, err := goreq.Request{
-		Method: "GET",
-		Uri:    buildURI(ctx, "/api/programs"),
-	}.Do()
+func StatusAction(client pb.GoSuvClient) {
+	res, err := client.Status(context.Background(), &pb.NopRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	if res.StatusCode != http.StatusOK {
-		log.Fatal(res.Body.ToString())
-	}
-	if err = res.Body.FromJsonTo(&programs); err != nil {
-		log.Fatal(err)
-	}
-	for _, p := range programs {
-		fmt.Printf("%10s\t%s\n", p.Info.Name, p.Status)
+	for _, ps := range res.GetPrograms() {
+		fmt.Printf("%-10s\t%-8s\t%s\n", ps.GetName(), ps.GetStatus(), ps.GetExtra())
 	}
 }
 
@@ -235,6 +225,11 @@ func initCli() {
 			Value:  rcfg.Server.RpcAddr,
 			Usage:  "server address",
 			EnvVar: "GOSUV_SERVER_ADDR",
+		},
+		cli.BoolFlag{
+			Name:   "debug, d",
+			Usage:  "enable debug info",
+			EnvVar: "GOSUV_DEBUG",
 		},
 	}
 

@@ -21,10 +21,14 @@ message Request {
   required string name = 1;
 }
 
-message StatusResponse {
+message ProgramStatus {
   required string name = 1;
   required string status = 2;
   optional string extra = 3;
+}
+
+message StatusResponse {
+  repeated ProgramStatus programs = 1;
 }
 
 service GoSuv {

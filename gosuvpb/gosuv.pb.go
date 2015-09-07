@@ -14,6 +14,7 @@ It has these top-level messages:
 	NopRequest
 	Response
 	Request
+	ProgramStatus
 	StatusResponse
 */
 package gosuvpb
@@ -120,36 +121,52 @@ func (m *Request) GetName() string {
 	return ""
 }
 
-type StatusResponse struct {
+type ProgramStatus struct {
 	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
 	Status           *string `protobuf:"bytes,2,req,name=status" json:"status,omitempty"`
 	Extra            *string `protobuf:"bytes,3,opt,name=extra" json:"extra,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *StatusResponse) Reset()         { *m = StatusResponse{} }
-func (m *StatusResponse) String() string { return proto.CompactTextString(m) }
-func (*StatusResponse) ProtoMessage()    {}
+func (m *ProgramStatus) Reset()         { *m = ProgramStatus{} }
+func (m *ProgramStatus) String() string { return proto.CompactTextString(m) }
+func (*ProgramStatus) ProtoMessage()    {}
 
-func (m *StatusResponse) GetName() string {
+func (m *ProgramStatus) GetName() string {
 	if m != nil && m.Name != nil {
 		return *m.Name
 	}
 	return ""
 }
 
-func (m *StatusResponse) GetStatus() string {
+func (m *ProgramStatus) GetStatus() string {
 	if m != nil && m.Status != nil {
 		return *m.Status
 	}
 	return ""
 }
 
-func (m *StatusResponse) GetExtra() string {
+func (m *ProgramStatus) GetExtra() string {
 	if m != nil && m.Extra != nil {
 		return *m.Extra
 	}
 	return ""
+}
+
+type StatusResponse struct {
+	Programs         []*ProgramStatus `protobuf:"bytes,1,rep,name=programs" json:"programs,omitempty"`
+	XXX_unrecognized []byte           `json:"-"`
+}
+
+func (m *StatusResponse) Reset()         { *m = StatusResponse{} }
+func (m *StatusResponse) String() string { return proto.CompactTextString(m) }
+func (*StatusResponse) ProtoMessage()    {}
+
+func (m *StatusResponse) GetPrograms() []*ProgramStatus {
+	if m != nil {
+		return m.Programs
+	}
+	return nil
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
