@@ -63,3 +63,7 @@ func (s *PbSuvServer) Version(ctx context.Context, in *pb.NopRequest) (res *pb.R
 	}
 	return
 }
+
+func (s *PbSuvServer) Status(ctx context.Context, in *pb.NopRequest) (res *pb.StatusResponse, err error) {
+	return
+}

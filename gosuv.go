@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/codegangsta/inject"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
 	"github.com/franela/goreq"
 	"github.com/golang/protobuf/proto"
@@ -32,42 +33,55 @@ func MkdirIfNoExists(dir string) error {
 	return nil
 }
 
-func wrapAction(f func(*cli.Context)) func(*cli.Context) {
-	return func(c *cli.Context) {
-		// check if server alive
-		_, err := goreq.Request{
-			Method: "GET",
-			Uri:    buildURI(c, "/api/version"),
-		}.Do()
-		if err != nil {
-			go exec.Command(os.Args[0], "serv").Run()
-			time.Sleep(time.Millisecond * 500)
-		}
-		f(c)
-	}
+func init() {
+	log.SetOutputLevel(log.Ldebug)
 }
 
-func wrapPbProgramAction(f func(*cli.Context, pb.ProgramClient)) func(*cli.Context) {
+func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
+	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
+	conn, err := grpcDial("unix", sockPath)
+	return conn, err
+}
+
+func testConnection(network, address string) error {
+	log.Debugf("test connection")
+	testconn, err := net.DialTimeout(network, address, time.Millisecond*100)
+	if err != nil {
+		log.Debugf("start run server")
+		cmd := exec.Command(os.Args[0], "serv")
+		timeout := time.Millisecond * 500
+		er := <-GoTimeoutFunc(timeout, cmd.Run)
+		if er == ErrGoTimeout {
+			fmt.Println("server started")
+		} else {
+			return fmt.Errorf("server stared failed, %v", er)
+		}
+	} else {
+		testconn.Close()
+	}
+	return nil
+}
+
+func wrap(f interface{}) func(*cli.Context) {
 	return func(ctx *cli.Context) {
+		sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
+		if err := testConnection("unix", sockPath); err != nil {
+			log.Fatal(err)
+		}
+
 		conn, err := connect(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer conn.Close()
-		client := pb.NewProgramClient(conn)
-		f(ctx, client)
-	}
-}
+		programClient := pb.NewProgramClient(conn)
+		gosuvClient := pb.NewGoSuvClient(conn)
 
-func wrapPbServerAction(f func(*cli.Context, pb.GoSuvClient)) func(*cli.Context) {
-	return func(ctx *cli.Context) {
-		conn, err := connect(ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer conn.Close()
-		client := pb.NewGoSuvClient(conn)
-		f(ctx, client)
+		inj := inject.New()
+		inj.Map(programClient)
+		inj.Map(gosuvClient)
+		inj.Map(ctx)
+		inj.Invoke(f)
 	}
 }
 
@@ -190,12 +204,6 @@ func grpcDial(network, addr string) (*grpc.ClientConn, error) {
 		}))
 }
 
-func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
-	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
-	conn, err := grpcDial("unix", sockPath)
-	return conn, err
-}
-
 func ShutdownAction(ctx *cli.Context, client pb.GoSuvClient) {
 	res, err := client.Shutdown(context.Background(), &pb.NopRequest{})
 	if err != nil {
@@ -234,13 +242,13 @@ func initCli() {
 		{
 			Name:   "version",
 			Usage:  "Show version",
-			Action: wrapPbServerAction(VersionAction),
+			Action: wrap(VersionAction),
 		},
 		{
 			Name:    "status",
 			Aliases: []string{"st"},
 			Usage:   "show program status",
-			Action:  wrapAction(StatusAction),
+			Action:  wrap(StatusAction),
 		},
 		{
 			Name:  "add",
@@ -255,22 +263,22 @@ func initCli() {
 					Usage: "Specify environ",
 				},
 			},
-			Action: wrapAction(AddAction),
+			Action: wrap(AddAction),
 		},
 		{
 			Name:   "start",
 			Usage:  "start a not running program",
-			Action: wrapAction(StartAction),
+			Action: wrap(StartAction),
 		},
 		{
 			Name:   "stop",
 			Usage:  "Stop running program",
-			Action: wrapAction(StopAction),
+			Action: wrap(StopAction),
 		},
 		{
 			Name:   "shutdown",
 			Usage:  "Shutdown server",
-			Action: wrapPbServerAction(ShutdownAction),
+			Action: wrap(ShutdownAction),
 		},
 		{
 			Name:   "serv",
@@ -286,9 +294,6 @@ func initCli() {
 		if !finfo.IsDir() {
 			continue
 		}
-		//modeExec := os.FileMode(0500)
-		//if strings.HasPrefix(finfo.Name(), "gosuv-") && (finfo.Mode()&modeExec) == modeExec {
-		//cmdName := string(finfo.Name()[6:])
 		cmdName := finfo.Name()
 		app.Commands = append(app.Commands, cli.Command{
 			Name:   cmdName,

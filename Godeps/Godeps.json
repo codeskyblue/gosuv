@@ -12,6 +12,11 @@
 			"Rev": "142e6cd241a4dfbf7f07a018f1f8225180018da4"
 		},
 		{
+			"ImportPath": "github.com/codegangsta/inject",
+			"Comment": "v1.0-rc1-10-g33e0aa1",
+			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
+		},
+		{
 			"ImportPath": "github.com/codeskyblue/kproc",
 			"Rev": "fcb55eb35ab6b7290f395ad596e80e8355d52d69"
 		},

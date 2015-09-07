@@ -14,6 +14,7 @@ It has these top-level messages:
 	NopRequest
 	Response
 	Request
+	StatusResponse
 */
 package gosuvpb
 
@@ -119,6 +120,38 @@ func (m *Request) GetName() string {
 	return ""
 }
 
+type StatusResponse struct {
+	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	Status           *string `protobuf:"bytes,2,req,name=status" json:"status,omitempty"`
+	Extra            *string `protobuf:"bytes,3,opt,name=extra" json:"extra,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *StatusResponse) Reset()         { *m = StatusResponse{} }
+func (m *StatusResponse) String() string { return proto.CompactTextString(m) }
+func (*StatusResponse) ProtoMessage()    {}
+
+func (m *StatusResponse) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
+func (m *StatusResponse) GetStatus() string {
+	if m != nil && m.Status != nil {
+		return *m.Status
+	}
+	return ""
+}
+
+func (m *StatusResponse) GetExtra() string {
+	if m != nil && m.Extra != nil {
+		return *m.Extra
+	}
+	return ""
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -129,6 +162,7 @@ type GoSuvClient interface {
 	Control(ctx context.Context, in *CtrlRequest, opts ...grpc.CallOption) (*CtrlResponse, error)
 	Shutdown(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*Response, error)
 	Version(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*Response, error)
+	Status(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*StatusResponse, error)
 }
 
 type goSuvClient struct {
@@ -166,12 +200,22 @@ func (c *goSuvClient) Version(ctx context.Context, in *NopRequest, opts ...grpc.
 	return out, nil
 }
 
+func (c *goSuvClient) Status(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
+	err := grpc.Invoke(ctx, "/gosuvpb.GoSuv/Status", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for GoSuv service
 
 type GoSuvServer interface {
 	Control(context.Context, *CtrlRequest) (*CtrlResponse, error)
 	Shutdown(context.Context, *NopRequest) (*Response, error)
 	Version(context.Context, *NopRequest) (*Response, error)
+	Status(context.Context, *NopRequest) (*StatusResponse, error)
 }
 
 func RegisterGoSuvServer(s *grpc.Server, srv GoSuvServer) {
@@ -214,6 +258,18 @@ func _GoSuv_Version_Handler(srv interface{}, ctx context.Context, codec grpc.Cod
 	return out, nil
 }
 
+func _GoSuv_Status_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(NopRequest)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(GoSuvServer).Status(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _GoSuv_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "gosuvpb.GoSuv",
 	HandlerType: (*GoSuvServer)(nil),
@@ -229,6 +285,10 @@ var _GoSuv_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Version",
 			Handler:    _GoSuv_Version_Handler,
+		},
+		{
+			MethodName: "Status",
+			Handler:    _GoSuv_Status_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
