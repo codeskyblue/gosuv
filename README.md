@@ -26,6 +26,15 @@ Go version at least `1.4`
 	# see more usage
 	$ gosuv help
 
+# Config
+Config file load order `$HOME/.gosuvrc` `$PWD/gosuvrc`
+
+config example
+
+	[server]
+	web-addr = 0.0.0.0:9090
+	rpc-addr = 127.0.0.1:54637
+
 # Plugin Design
 All command plugin will store in `$HOME/.gosuv/cmdplugin`, gosuv will treat this plugin as a subcommand.
 
