@@ -35,6 +35,11 @@ config example
 	web-addr = 0.0.0.0:9090
 	rpc-addr = 127.0.0.1:54637
 
+# State
+Only 4 states.
+
+![states](images/states.png)
+
 # Plugin Design
 All command plugin will store in `$HOME/.gosuv/cmdplugin`, gosuv will treat this plugin as a subcommand.
 
