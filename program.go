@@ -42,11 +42,10 @@ func GoTimeoutFunc(timeout time.Duration, f func() error) chan error {
 }
 
 const (
-	ST_STANDBY   = "STANDBY"
 	ST_RUNNING   = "RUNNING"
 	ST_STOPPED   = "STOPPED"
 	ST_FATAL     = "FATAL"
-	ST_RETRYWAIT = "RETRYWAIT"
+	ST_RETRYWAIT = "RETRYWAIT" // some like python-supervisor EXITED
 )
 
 type Event int
@@ -61,8 +60,9 @@ type ProgramInfo struct {
 	Command      []string `json:"command"`
 	Dir          string   `json:"dir"`
 	Environ      []string `json:"environ"`
-	AutoStart    bool     `json:"autostart"`
+	AutoStart    bool     `json:"autostart"` // change to *bool, which support unexpected
 	StartRetries int      `json:"startretries"`
+	StartSeconds int      `json:"startsecs"`
 }
 
 func (p *ProgramInfo) buildCmd() *exec.Cmd {
@@ -87,9 +87,12 @@ func NewProgram(info *ProgramInfo) *Program {
 	if info.StartRetries == 0 {
 		info.StartRetries = 3
 	}
+	if info.StartSeconds == 0 {
+		info.StartSeconds = 3
+	}
 	return &Program{
 		//Process: kproc.ProcCommand(cmd),
-		Status: ST_STANDBY,
+		Status: ST_STOPPED,
 		Sig:    make(chan os.Signal),
 		Info:   info,
 		stopc:  make(chan bool),
@@ -104,11 +107,11 @@ func (p *Program) setStatus(st string) {
 func (p *Program) InputData(event Event) {
 	switch event {
 	case EVENT_START:
-		if p.Status != ST_RUNNING {
+		if p.Status == ST_STOPPED || p.Status == ST_FATAL {
 			go p.RunWithRetry()
 		}
 	case EVENT_STOP:
-		if p.Status == ST_RUNNING {
+		if p.Status == ST_RUNNING || p.Status == ST_RETRYWAIT {
 			p.Stop()
 		}
 	}
@@ -117,7 +120,7 @@ func (p *Program) InputData(event Event) {
 func (p *Program) createLog() (*os.File, error) {
 	logDir := filepath.Join(GOSUV_HOME, "logs")
 	os.MkdirAll(logDir, 0755) // just do it, err ignore it
-	logFile := filepath.Join(logDir, p.Info.Name+".output.log")
+	logFile := filepath.Join(logDir, p.Info.Name+".log")
 	return os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 }
 
@@ -130,16 +133,25 @@ func (p *Program) sleep(d time.Duration) {
 }
 
 func (p *Program) RunWithRetry() {
-	for p.retry = 0; p.retry < p.Info.StartRetries; p.retry += 1 {
+	for p.retry = 0; p.retry < p.Info.StartRetries+1; p.retry += 1 {
 		// wait program to exit
+		errc := GoFunc(p.Run)
+		var err error
+
+	PROGRAM_WAIT:
+		// Here is RUNNING State
 		select {
-		case err := <-GoFunc(p.Run):
+		case err = <-errc:
 			log.Info(p.Info.Name, err)
+		case <-time.After(time.Second * time.Duration(p.Info.StartSeconds)): // reset retry
+			p.retry = 0
+			goto PROGRAM_WAIT
 		case <-p.stopc:
 			return
 		}
-		// retry
-		if p.retry+1 < p.Info.StartRetries {
+
+		// Enter RETRY_WAIT State
+		if p.retry < p.Info.StartRetries {
 			p.setStatus(ST_RETRYWAIT)
 			select {
 			case <-p.stopc:

@@ -39,12 +39,6 @@ type PbSuvServer struct {
 	lis net.Listener
 }
 
-func (s *PbSuvServer) Control(ctx context.Context, in *pb.CtrlRequest) (*pb.CtrlResponse, error) {
-	res := &pb.CtrlResponse{}
-	res.Value = proto.String("Hi")
-	return res, nil
-}
-
 func (s *PbSuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Response, error) {
 	go func() {
 		time.Sleep(50 * time.Millisecond)
