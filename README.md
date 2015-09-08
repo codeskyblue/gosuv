@@ -36,7 +36,7 @@ config example
 	rpc-addr = 127.0.0.1:54637
 
 # State
-Only 4 states.
+Only 4 states. [ref](http://supervisord.org/subprocess.html#process-states)
 
 ![states](images/states.png)
 

@@ -107,7 +107,7 @@ func AddAction(ctx *cli.Context) {
 		log.Fatal("need at least one args")
 	}
 	if name == "" {
-		name = ctx.Args()[0]
+		name = filepath.Base(ctx.Args()[0])
 	}
 	log.Println(ctx.Args().Tail())
 	log.Println([]string(ctx.Args()))
