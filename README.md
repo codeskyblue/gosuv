@@ -1,5 +1,6 @@
 # gosuv
 [![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
+[![gorelease](https://dn-gorelease.qbox.me/gorelease-download-brightgreen.png)](http://gorelease.herokuapp.com/dn-gobuild5.qbox.me/gosuv/master)
 
 golang port of python-supervisor
 
