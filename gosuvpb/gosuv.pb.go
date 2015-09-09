@@ -12,6 +12,7 @@ It has these top-level messages:
 	NopRequest
 	Response
 	Request
+	ProgramInfo
 	ProgramStatus
 	StatusResponse
 */
@@ -75,6 +76,38 @@ func (*Request) ProtoMessage()    {}
 func (m *Request) GetName() string {
 	if m != nil && m.Name != nil {
 		return *m.Name
+	}
+	return ""
+}
+
+type ProgramInfo struct {
+	Name             *string  `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	Command          []string `protobuf:"bytes,2,rep,name=command" json:"command,omitempty"`
+	Dir              *string  `protobuf:"bytes,3,req,name=dir" json:"dir,omitempty"`
+	XXX_unrecognized []byte   `json:"-"`
+}
+
+func (m *ProgramInfo) Reset()         { *m = ProgramInfo{} }
+func (m *ProgramInfo) String() string { return proto.CompactTextString(m) }
+func (*ProgramInfo) ProtoMessage()    {}
+
+func (m *ProgramInfo) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
+func (m *ProgramInfo) GetCommand() []string {
+	if m != nil {
+		return m.Command
+	}
+	return nil
+}
+
+func (m *ProgramInfo) GetDir() string {
+	if m != nil && m.Dir != nil {
+		return *m.Dir
 	}
 	return ""
 }

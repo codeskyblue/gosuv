@@ -11,6 +11,12 @@ message Request {
   required string name = 1;
 }
 
+message ProgramInfo {
+  required string name = 1;
+  repeated string command = 2;
+  required string dir = 3;
+}
+
 message ProgramStatus {
   required string name = 1;
   required string status = 2;
