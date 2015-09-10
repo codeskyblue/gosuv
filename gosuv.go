@@ -15,7 +15,6 @@ import (
 	"github.com/codegangsta/inject"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
 	"github.com/franela/goreq"
-	"github.com/golang/protobuf/proto"
 	"github.com/qiniu/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -96,7 +95,7 @@ func StatusAction(client pb.GoSuvClient) {
 		log.Fatal(err)
 	}
 	for _, ps := range res.GetPrograms() {
-		fmt.Printf("%-10s\t%-8s\t%s\n", ps.GetName(), ps.GetStatus(), ps.GetExtra())
+		fmt.Printf("%-10s\t%-8s\t%s\n", ps.Name, ps.Status, ps.Extra)
 	}
 }
 
@@ -158,11 +157,11 @@ func StopAction(ctx *cli.Context) {
 
 	name := ctx.Args().First()
 	client := pb.NewProgramClient(conn)
-	res, err := client.Stop(context.Background(), &pb.Request{Name: proto.String(name)})
+	res, err := client.Stop(context.Background(), &pb.Request{Name: name})
 	if err != nil {
 		Errorf("ERR: %#v\n", err)
 	}
-	fmt.Println(res.GetMessage())
+	fmt.Println(res.Message)
 }
 
 func Errorf(format string, v ...interface{}) {
@@ -179,11 +178,11 @@ func StartAction(ctx *cli.Context) {
 
 	name := ctx.Args().First()
 	client := pb.NewProgramClient(conn)
-	res, err := client.Start(context.Background(), &pb.Request{Name: proto.String(name)})
+	res, err := client.Start(context.Background(), &pb.Request{Name: name})
 	if err != nil {
 		Errorf("ERR: %#v\n", err)
 	}
-	fmt.Println(res.GetMessage())
+	fmt.Println(res.Message)
 }
 
 // grpc.Dial can't set network, so I have to implement this func
@@ -207,7 +206,7 @@ func ShutdownAction(ctx *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(res.GetMessage())
+	fmt.Println(res.Message)
 }
 
 func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
@@ -216,7 +215,7 @@ func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Server: %s\n", res.GetMessage())
+	fmt.Printf("Server: %s\n", res.Message)
 }
 
 var app *cli.App

@@ -1,39 +1,46 @@
+syntax = "proto3";
+
 package gosuvpb;
 
 message NopRequest {}
 
 message Response {
-  optional int32 code = 1;
-  optional string message = 2;
+  int32 code = 1;
+  string message = 2;
 }
 
 message Request {
-  required string name = 1;
+  string name = 1;
 }
 
 message ProgramInfo {
-  required string name = 1;
-  repeated string command = 2;
-  required string dir = 3;
+  string name = 1;
+  string command = 2;
+  string dir = 3;
 }
 
 message ProgramStatus {
-  required string name = 1;
-  required string status = 2;
-  optional string extra = 3;
+  string name = 1;
+  string status = 2;
+  string extra = 3;
 }
 
 message StatusResponse {
   repeated ProgramStatus programs = 1;
 }
 
+message LogLine {
+  string line = 1;
+}
+
 service GoSuv {
-  rpc Shutdown(NopRequest) returns (Response) {};
-  rpc Version(NopRequest)  returns (Response) {};
-  rpc Status(NopRequest) returns (StatusResponse) {};
+  rpc Shutdown(NopRequest) returns (Response) {}
+  rpc Version(NopRequest)  returns (Response) {}
+  rpc Status(NopRequest) returns (StatusResponse) {}
 }
 
 service Program {
-  rpc Start(Request) returns (Response) {};
-  rpc Stop(Request) returns (Response) {};
+  rpc Start(Request) returns (Response) {}
+  rpc Stop(Request) returns (Response) {}
+  //rpc Tail(Request) returns (stream LogLine) {}
 }

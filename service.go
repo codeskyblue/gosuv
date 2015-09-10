@@ -6,7 +6,6 @@ import (
 	"time"
 
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
 
@@ -15,23 +14,23 @@ type PbProgram struct {
 
 func (this *PbProgram) Start(ctx context.Context, in *pb.Request) (res *pb.Response, err error) {
 	res = &pb.Response{}
-	program, err := programTable.Get(in.GetName())
+	program, err := programTable.Get(in.Name)
 	if err != nil {
 		return
 	}
 	program.InputData(EVENT_START)
-	res.Message = proto.String(in.GetName() + ": started")
+	res.Message = in.Name + ": started"
 	return res, nil
 }
 
 func (this *PbProgram) Stop(ctx context.Context, in *pb.Request) (res *pb.Response, err error) {
 	res = &pb.Response{}
-	program, err := programTable.Get(in.GetName())
+	program, err := programTable.Get(in.Name)
 	if err != nil {
 		return
 	}
 	program.InputData(EVENT_STOP)
-	res.Message = proto.String(in.GetName() + ": stopped")
+	res.Message = in.Name + ": stopped"
 	return res, nil
 }
 
@@ -47,13 +46,13 @@ func (s *PbSuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Resp
 		os.Exit(2)
 	}()
 	res := &pb.Response{}
-	res.Message = proto.String("gosuv shutdown")
+	res.Message = "gosuv shutdown"
 	return res, nil
 }
 
 func (s *PbSuvServer) Version(ctx context.Context, in *pb.NopRequest) (res *pb.Response, err error) {
 	res = &pb.Response{
-		Message: proto.String(GOSUV_VERSION),
+		Message: GOSUV_VERSION,
 	}
 	return
 }
@@ -62,9 +61,9 @@ func (s *PbSuvServer) Status(ctx context.Context, in *pb.NopRequest) (res *pb.St
 	res = &pb.StatusResponse{}
 	for _, program := range programTable.Programs() {
 		ps := &pb.ProgramStatus{}
-		ps.Name = proto.String(program.Info.Name)
-		ps.Status = proto.String(program.Status)
-		ps.Extra = proto.String("...")
+		ps.Name = program.Info.Name
+		ps.Status = program.Status
+		ps.Extra = "..."
 		res.Programs = append(res.Programs, ps)
 	}
 	return

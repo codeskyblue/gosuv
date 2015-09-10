@@ -15,6 +15,7 @@ It has these top-level messages:
 	ProgramInfo
 	ProgramStatus
 	StatusResponse
+	LogLine
 */
 package gosuvpb
 
@@ -33,7 +34,6 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type NopRequest struct {
-	XXX_unrecognized []byte `json:"-"`
 }
 
 func (m *NopRequest) Reset()         { *m = NopRequest{} }
@@ -41,112 +41,44 @@ func (m *NopRequest) String() string { return proto.CompactTextString(m) }
 func (*NopRequest) ProtoMessage()    {}
 
 type Response struct {
-	Code             *int32  `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
-	Message          *string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Code    int32  `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
+	Message string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
 }
 
 func (m *Response) Reset()         { *m = Response{} }
 func (m *Response) String() string { return proto.CompactTextString(m) }
 func (*Response) ProtoMessage()    {}
 
-func (m *Response) GetCode() int32 {
-	if m != nil && m.Code != nil {
-		return *m.Code
-	}
-	return 0
-}
-
-func (m *Response) GetMessage() string {
-	if m != nil && m.Message != nil {
-		return *m.Message
-	}
-	return ""
-}
-
 type Request struct {
-	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 }
 
 func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 
-func (m *Request) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
 type ProgramInfo struct {
-	Name             *string  `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	Command          []string `protobuf:"bytes,2,rep,name=command" json:"command,omitempty"`
-	Dir              *string  `protobuf:"bytes,3,req,name=dir" json:"dir,omitempty"`
-	XXX_unrecognized []byte   `json:"-"`
+	Name    string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Command string `protobuf:"bytes,2,opt,name=command" json:"command,omitempty"`
+	Dir     string `protobuf:"bytes,3,opt,name=dir" json:"dir,omitempty"`
 }
 
 func (m *ProgramInfo) Reset()         { *m = ProgramInfo{} }
 func (m *ProgramInfo) String() string { return proto.CompactTextString(m) }
 func (*ProgramInfo) ProtoMessage()    {}
 
-func (m *ProgramInfo) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *ProgramInfo) GetCommand() []string {
-	if m != nil {
-		return m.Command
-	}
-	return nil
-}
-
-func (m *ProgramInfo) GetDir() string {
-	if m != nil && m.Dir != nil {
-		return *m.Dir
-	}
-	return ""
-}
-
 type ProgramStatus struct {
-	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	Status           *string `protobuf:"bytes,2,req,name=status" json:"status,omitempty"`
-	Extra            *string `protobuf:"bytes,3,opt,name=extra" json:"extra,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Name   string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Status string `protobuf:"bytes,2,opt,name=status" json:"status,omitempty"`
+	Extra  string `protobuf:"bytes,3,opt,name=extra" json:"extra,omitempty"`
 }
 
 func (m *ProgramStatus) Reset()         { *m = ProgramStatus{} }
 func (m *ProgramStatus) String() string { return proto.CompactTextString(m) }
 func (*ProgramStatus) ProtoMessage()    {}
 
-func (m *ProgramStatus) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *ProgramStatus) GetStatus() string {
-	if m != nil && m.Status != nil {
-		return *m.Status
-	}
-	return ""
-}
-
-func (m *ProgramStatus) GetExtra() string {
-	if m != nil && m.Extra != nil {
-		return *m.Extra
-	}
-	return ""
-}
-
 type StatusResponse struct {
-	Programs         []*ProgramStatus `protobuf:"bytes,1,rep,name=programs" json:"programs,omitempty"`
-	XXX_unrecognized []byte           `json:"-"`
+	Programs []*ProgramStatus `protobuf:"bytes,1,rep,name=programs" json:"programs,omitempty"`
 }
 
 func (m *StatusResponse) Reset()         { *m = StatusResponse{} }
@@ -159,6 +91,14 @@ func (m *StatusResponse) GetPrograms() []*ProgramStatus {
 	}
 	return nil
 }
+
+type LogLine struct {
+	Line string `protobuf:"bytes,1,opt,name=line" json:"line,omitempty"`
+}
+
+func (m *LogLine) Reset()         { *m = LogLine{} }
+func (m *LogLine) String() string { return proto.CompactTextString(m) }
+func (*LogLine) ProtoMessage()    {}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context

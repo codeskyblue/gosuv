@@ -63,6 +63,10 @@ I decide to use [grpc](http://www.grpc.io/) in 2015-09-05
 	go get -u -v github.com/golang/protobuf/{proto,protoc-gen-go}
 	pbrpc/codegen.sh
 
+**Need protoc 3.0** <http://www.cnblogs.com/yuhan-TB/p/4629362.html>
+
+Do not use `brew install protobuf`, this will only install protoc 2.6
+
 # Design
 
 Has a folder `.gosuv` under `$HOME` path.
