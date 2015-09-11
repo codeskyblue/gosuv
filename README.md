@@ -24,6 +24,11 @@ Go version at least `1.4`
 	$ gosuv stop timetest
 	program "timetest" stopped
 
+	$ gosuv tail timetest
+	line 1
+	line 2
+	line ...
+	
 	# see more usage
 	$ gosuv help
 

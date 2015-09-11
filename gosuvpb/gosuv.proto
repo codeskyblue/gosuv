@@ -42,5 +42,5 @@ service GoSuv {
 service Program {
   rpc Start(Request) returns (Response) {}
   rpc Stop(Request) returns (Response) {}
-  //rpc Tail(Request) returns (stream LogLine) {}
+  rpc Tail(Request) returns (stream LogLine) {}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"os"
+	"os/exec"
 	"time"
 
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
@@ -32,6 +33,34 @@ func (this *PbProgram) Stop(ctx context.Context, in *pb.Request) (res *pb.Respon
 	program.InputData(EVENT_STOP)
 	res.Message = in.Name + ": stopped"
 	return res, nil
+}
+
+//func (this *PbProgram) Tail(ctx context.Context, in *pb.Request)(stream
+func (c *PbProgram) Tail(in *pb.Request, stream pb.Program_TailServer) (err error) {
+	program, err := programTable.Get(in.Name)
+	if err != nil {
+		return
+	}
+	cmd := exec.Command("tail", "-n5", "-f", program.logFilePath())
+	rd, err := cmd.StdoutPipe()
+	go cmd.Run()
+	defer func() {
+		if cmd.Process != nil {
+			cmd.Process.Kill()
+		}
+	}()
+	buf := make([]byte, 1024)
+	for {
+		nr, err := rd.Read(buf)
+		if err != nil {
+			break
+		}
+		line := &pb.LogLine{Line: string(buf[:nr])}
+		if err = stream.Send(line); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type PbSuvServer struct {

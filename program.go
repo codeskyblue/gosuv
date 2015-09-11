@@ -121,7 +121,7 @@ func (p *Program) InputData(event Event) {
 func (p *Program) createLog() (*os.File, error) {
 	logDir := filepath.Join(GOSUV_HOME, "logs")
 	os.MkdirAll(logDir, 0755) // just do it, err ignore it
-	logFile := filepath.Join(logDir, p.Info.Name+".log")
+	logFile := p.logFilePath()
 	return os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 }
 
@@ -131,6 +131,11 @@ func (p *Program) sleep(d time.Duration) {
 		return
 	case <-time.After(time.Second * 2):
 	}
+}
+
+func (p *Program) logFilePath() string {
+	logDir := filepath.Join(GOSUV_HOME, "logs")
+	return filepath.Join(logDir, p.Info.Name+".log")
 }
 
 func (p *Program) RunWithRetry() {

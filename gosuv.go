@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -164,6 +165,24 @@ func StopAction(ctx *cli.Context) {
 	fmt.Println(res.Message)
 }
 
+func TailAction(ctx *cli.Context, client pb.ProgramClient) {
+	req := &pb.Request{Name: ctx.Args().First()}
+	tailc, err := client.Tail(context.Background(), req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for {
+		line, err := tailc.Recv()
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Print(line.Line)
+	}
+}
+
 func Errorf(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 	os.Exit(1)
@@ -276,6 +295,11 @@ func initCli() {
 			Name:   "stop",
 			Usage:  "Stop running program",
 			Action: wrap(StopAction),
+		},
+		{
+			Name:   "tail",
+			Usage:  "tail log",
+			Action: wrap(TailAction),
 		},
 		{
 			Name:   "shutdown",

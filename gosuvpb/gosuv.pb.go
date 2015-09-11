@@ -220,6 +220,7 @@ var _GoSuv_serviceDesc = grpc.ServiceDesc{
 type ProgramClient interface {
 	Start(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	Stop(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Tail(ctx context.Context, in *Request, opts ...grpc.CallOption) (Program_TailClient, error)
 }
 
 type programClient struct {
@@ -248,11 +249,44 @@ func (c *programClient) Stop(ctx context.Context, in *Request, opts ...grpc.Call
 	return out, nil
 }
 
+func (c *programClient) Tail(ctx context.Context, in *Request, opts ...grpc.CallOption) (Program_TailClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_Program_serviceDesc.Streams[0], c.cc, "/gosuvpb.Program/Tail", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &programTailClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Program_TailClient interface {
+	Recv() (*LogLine, error)
+	grpc.ClientStream
+}
+
+type programTailClient struct {
+	grpc.ClientStream
+}
+
+func (x *programTailClient) Recv() (*LogLine, error) {
+	m := new(LogLine)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Server API for Program service
 
 type ProgramServer interface {
 	Start(context.Context, *Request) (*Response, error)
 	Stop(context.Context, *Request) (*Response, error)
+	Tail(*Request, Program_TailServer) error
 }
 
 func RegisterProgramServer(s *grpc.Server, srv ProgramServer) {
@@ -283,6 +317,27 @@ func _Program_Stop_Handler(srv interface{}, ctx context.Context, codec grpc.Code
 	return out, nil
 }
 
+func _Program_Tail_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Request)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ProgramServer).Tail(m, &programTailServer{stream})
+}
+
+type Program_TailServer interface {
+	Send(*LogLine) error
+	grpc.ServerStream
+}
+
+type programTailServer struct {
+	grpc.ServerStream
+}
+
+func (x *programTailServer) Send(m *LogLine) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _Program_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "gosuvpb.Program",
 	HandlerType: (*ProgramServer)(nil),
@@ -296,5 +351,11 @@ var _Program_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Program_Stop_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Tail",
+			Handler:       _Program_Tail_Handler,
+			ServerStreams: true,
+		},
+	},
 }
