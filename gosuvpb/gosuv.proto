@@ -13,6 +13,11 @@ message Request {
   string name = 1;
 }
 
+message TailRequest {
+  string name = 1;
+  int32 number = 2; // the location of number lines
+  bool follow = 3;
+}
 message ProgramInfo {
   string name = 1;
   string command = 2;
@@ -42,5 +47,5 @@ service GoSuv {
 service Program {
   rpc Start(Request) returns (Response) {}
   rpc Stop(Request) returns (Response) {}
-  rpc Tail(Request) returns (stream LogLine) {}
+  rpc Tail(TailRequest) returns (stream LogLine) {}
 }

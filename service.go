@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -36,12 +37,16 @@ func (this *PbProgram) Stop(ctx context.Context, in *pb.Request) (res *pb.Respon
 }
 
 //func (this *PbProgram) Tail(ctx context.Context, in *pb.Request)(stream
-func (c *PbProgram) Tail(in *pb.Request, stream pb.Program_TailServer) (err error) {
+func (c *PbProgram) Tail(in *pb.TailRequest, stream pb.Program_TailServer) (err error) {
 	program, err := programTable.Get(in.Name)
 	if err != nil {
 		return
 	}
-	cmd := exec.Command("tail", "-n5", "-f", program.logFilePath())
+	args := []string{"-n", fmt.Sprintf("%d", in.Number)}
+	if in.Follow {
+		args = append(args, "-f")
+	}
+	cmd := exec.Command("tail", append(args, program.logFilePath())...)
 	rd, err := cmd.StdoutPipe()
 	go cmd.Run()
 	defer func() {

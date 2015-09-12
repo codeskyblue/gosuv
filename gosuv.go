@@ -166,7 +166,11 @@ func StopAction(ctx *cli.Context) {
 }
 
 func TailAction(ctx *cli.Context, client pb.ProgramClient) {
-	req := &pb.Request{Name: ctx.Args().First()}
+	req := &pb.TailRequest{
+		Name:   ctx.Args().First(),
+		Number: int32(ctx.Int("number")),
+		Follow: ctx.Bool("follow"),
+	}
 	tailc, err := client.Tail(context.Background(), req)
 	if err != nil {
 		log.Fatal(err)
@@ -300,6 +304,17 @@ func initCli() {
 			Name:   "tail",
 			Usage:  "tail log",
 			Action: wrap(TailAction),
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "number, n",
+					Value: 10,
+					Usage: "The location is number lines.",
+				},
+				cli.BoolFlag{
+					Name:  "follow, f",
+					Usage: "Constantly show log",
+				},
+			},
 		},
 		{
 			Name:   "shutdown",

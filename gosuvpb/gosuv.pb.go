@@ -12,6 +12,7 @@ It has these top-level messages:
 	NopRequest
 	Response
 	Request
+	TailRequest
 	ProgramInfo
 	ProgramStatus
 	StatusResponse
@@ -56,6 +57,16 @@ type Request struct {
 func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
+
+type TailRequest struct {
+	Name   string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Number int32  `protobuf:"varint,2,opt,name=number" json:"number,omitempty"`
+	Follow bool   `protobuf:"varint,3,opt,name=follow" json:"follow,omitempty"`
+}
+
+func (m *TailRequest) Reset()         { *m = TailRequest{} }
+func (m *TailRequest) String() string { return proto.CompactTextString(m) }
+func (*TailRequest) ProtoMessage()    {}
 
 type ProgramInfo struct {
 	Name    string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
@@ -220,7 +231,7 @@ var _GoSuv_serviceDesc = grpc.ServiceDesc{
 type ProgramClient interface {
 	Start(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	Stop(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
-	Tail(ctx context.Context, in *Request, opts ...grpc.CallOption) (Program_TailClient, error)
+	Tail(ctx context.Context, in *TailRequest, opts ...grpc.CallOption) (Program_TailClient, error)
 }
 
 type programClient struct {
@@ -249,7 +260,7 @@ func (c *programClient) Stop(ctx context.Context, in *Request, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *programClient) Tail(ctx context.Context, in *Request, opts ...grpc.CallOption) (Program_TailClient, error) {
+func (c *programClient) Tail(ctx context.Context, in *TailRequest, opts ...grpc.CallOption) (Program_TailClient, error) {
 	stream, err := grpc.NewClientStream(ctx, &_Program_serviceDesc.Streams[0], c.cc, "/gosuvpb.Program/Tail", opts...)
 	if err != nil {
 		return nil, err
@@ -286,7 +297,7 @@ func (x *programTailClient) Recv() (*LogLine, error) {
 type ProgramServer interface {
 	Start(context.Context, *Request) (*Response, error)
 	Stop(context.Context, *Request) (*Response, error)
-	Tail(*Request, Program_TailServer) error
+	Tail(*TailRequest, Program_TailServer) error
 }
 
 func RegisterProgramServer(s *grpc.Server, srv ProgramServer) {
@@ -318,7 +329,7 @@ func _Program_Stop_Handler(srv interface{}, ctx context.Context, codec grpc.Code
 }
 
 func _Program_Tail_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Request)
+	m := new(TailRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
