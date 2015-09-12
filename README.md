@@ -1,6 +1,5 @@
 # gosuv
 [![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
-[![gorelease](https://dn-gorelease.qbox.me/gorelease-download-blue.svg)](http://gorelease.herokuapp.com/dn-gobuild5.qbox.me/gosuv/master)
 
 golang port of python-supervisor
 
@@ -12,6 +11,9 @@ Go version at least `1.4`
 
 ## Install
 	go get -v github.com/codeskyblue/gosuv
+
+For binary version, just click
+[![gorelease](https://dn-gorelease.qbox.me/gorelease-download-blue.svg)](http://gorelease.herokuapp.com/dn-gobuild5.qbox.me/gosuv/master)
 
 ## Usage
 	$ gosuv add --name timetest -- bash -c "while true; do date; sleep 1; done"
