@@ -59,8 +59,8 @@ const (
 type ProgramInfo struct {
 	Name         string   `json:"name"`
 	Command      []string `json:"command"`
-	Dir          string   `json:"dir"`
 	Environ      []string `json:"environ"`
+	Dir          string   `json:"directory"`
 	AutoStart    bool     `json:"autostart"` // change to *bool, which support unexpected
 	StartRetries int      `json:"startretries"`
 	StartSeconds int      `json:"startsecs"`
@@ -92,7 +92,6 @@ func NewProgram(info *ProgramInfo) *Program {
 		info.StartSeconds = 3
 	}
 	return &Program{
-		//Process: kproc.ProcCommand(cmd),
 		Status: ST_STOPPED,
 		Sig:    make(chan os.Signal),
 		Info:   info,
