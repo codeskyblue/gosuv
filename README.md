@@ -13,7 +13,8 @@ Go version at least `1.4`
 	go get -v github.com/codeskyblue/gosuv
 
 For binary version, just click
-[![gorelease](https://dn-gorelease.qbox.me/gorelease-download-blue.svg)](http://gorelease.herokuapp.com/dn-gobuild5.qbox.me/gosuv/master)
+
+[![gorelease](https://dn-gorelease.qbox.me/gorelease-download-blue.svg)](http://gorelease.herokuapp.com/codeskyblue/gosuv)
 
 ## Usage
 	$ gosuv add --name timetest -- bash -c "while true; do date; sleep 1; done"
