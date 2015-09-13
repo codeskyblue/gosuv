@@ -9,10 +9,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
-	"time"
 
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
-	"github.com/lunny/tango"
 	"github.com/qiniu/log"
 	"google.golang.org/grpc"
 )
@@ -27,6 +25,7 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 	json.NewEncoder(w).Encode(v)
 }
 
+/*
 func versionHandler(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, &JSONResponse{
 		Code:    200,
@@ -71,6 +70,7 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 		Message: "not implement",
 	})
 }
+*/
 
 func handleSignal(lis net.Listener) {
 	sigc := make(chan os.Signal, 2)
@@ -92,15 +92,17 @@ func handleSignal(lis net.Listener) {
 func ServeAddr(addr string) error {
 	InitServer()
 
-	t := tango.New()
-	t.Group("/api", func(g *tango.Group) {
-		g.Get("/version", versionHandler)
-		g.Post("/shutdown", shutdownHandler)
-		g.Post("/programs", addHandler)
-		g.Get("/programs", statusHandler)
-	})
+	/*
+		t := tango.New()
+		t.Group("/api", func(g *tango.Group) {
+			g.Get("/version", versionHandler)
+			g.Post("/shutdown", shutdownHandler)
+			g.Post("/programs", addHandler)
+			g.Get("/programs", statusHandler)
+		})
 
-	go t.Run(addr)
+		go t.Run(addr)
+	*/
 
 	lis, err := net.Listen("unix", filepath.Join(GOSUV_HOME, "gosuv.sock"))
 	if err != nil {
