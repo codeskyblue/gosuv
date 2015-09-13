@@ -49,6 +49,10 @@ Only 4 states. [ref](http://supervisord.org/subprocess.html#process-states)
 ![states](images/states.png)
 
 # Plugin Design
+Current plugins:
+
+- [tailf](https://github.com/codeskyblue/gosuv-tailf)
+
 All command plugin will store in `$HOME/.gosuv/cmdplugin`, gosuv will treat this plugin as a subcommand.
 
 for example:

@@ -355,7 +355,7 @@ func runPlugin(ctx *cli.Context, name string) {
 	envs := []string{
 		"GOSUV_SERVER_ADDR=" + ctx.GlobalString("addr"),
 		"GOSUV_PLUGIN_NAME=" + name,
-		"GOSUV_FILE_PATH=" + os.Args[0],
+		"GOSUV_PROGRAM=" + os.Args[0],
 	}
 	cmd := exec.Command(filepath.Join(pluginDir, "run"), ctx.Args()...)
 	cmd.Stdout = os.Stdout
