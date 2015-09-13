@@ -101,13 +101,13 @@ Eg, current folder is in `/tmp/hello`
 
 	gosuv add --name "program1" -- ./program1 1888
 
-Will add a record to `$HOME/.gosuv/gosuv.json`
+Will add a record to `$HOME/.gosuv/programs.json`
 
 	{
 		"name": "program1",
 		"command": ["./program1", "1888"],
-		"dir": "/tmp/hello",
-		"env": [],
+		"directory": "/tmp/hello",
+		"environ": [],
 	}
 
 Show status
