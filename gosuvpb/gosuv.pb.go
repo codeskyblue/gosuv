@@ -69,9 +69,10 @@ func (m *TailRequest) String() string { return proto.CompactTextString(m) }
 func (*TailRequest) ProtoMessage()    {}
 
 type ProgramInfo struct {
-	Name    string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Command string `protobuf:"bytes,2,opt,name=command" json:"command,omitempty"`
-	Dir     string `protobuf:"bytes,3,opt,name=dir" json:"dir,omitempty"`
+	Name      string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Directory string   `protobuf:"bytes,3,opt,name=directory" json:"directory,omitempty"`
+	Command   []string `protobuf:"bytes,2,rep,name=command" json:"command,omitempty"`
+	Environ   []string `protobuf:"bytes,4,rep,name=environ" json:"environ,omitempty"`
 }
 
 func (m *ProgramInfo) Reset()         { *m = ProgramInfo{} }
@@ -121,6 +122,7 @@ type GoSuvClient interface {
 	Shutdown(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*Response, error)
 	Version(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*Response, error)
 	Status(ctx context.Context, in *NopRequest, opts ...grpc.CallOption) (*StatusResponse, error)
+	Create(ctx context.Context, in *ProgramInfo, opts ...grpc.CallOption) (*Response, error)
 }
 
 type goSuvClient struct {
@@ -158,12 +160,22 @@ func (c *goSuvClient) Status(ctx context.Context, in *NopRequest, opts ...grpc.C
 	return out, nil
 }
 
+func (c *goSuvClient) Create(ctx context.Context, in *ProgramInfo, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := grpc.Invoke(ctx, "/gosuvpb.GoSuv/Create", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for GoSuv service
 
 type GoSuvServer interface {
 	Shutdown(context.Context, *NopRequest) (*Response, error)
 	Version(context.Context, *NopRequest) (*Response, error)
 	Status(context.Context, *NopRequest) (*StatusResponse, error)
+	Create(context.Context, *ProgramInfo) (*Response, error)
 }
 
 func RegisterGoSuvServer(s *grpc.Server, srv GoSuvServer) {
@@ -206,6 +218,18 @@ func _GoSuv_Status_Handler(srv interface{}, ctx context.Context, codec grpc.Code
 	return out, nil
 }
 
+func _GoSuv_Create_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(ProgramInfo)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(GoSuvServer).Create(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _GoSuv_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "gosuvpb.GoSuv",
 	HandlerType: (*GoSuvServer)(nil),
@@ -221,6 +245,10 @@ var _GoSuv_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Status",
 			Handler:    _GoSuv_Status_Handler,
+		},
+		{
+			MethodName: "Create",
+			Handler:    _GoSuv_Create_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},

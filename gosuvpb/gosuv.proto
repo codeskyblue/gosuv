@@ -20,8 +20,9 @@ message TailRequest {
 }
 message ProgramInfo {
   string name = 1;
-  string command = 2;
-  string dir = 3;
+  string directory = 3;
+  repeated string command = 2;
+  repeated string environ = 4;
 }
 
 message ProgramStatus {
@@ -42,6 +43,7 @@ service GoSuv {
   rpc Shutdown(NopRequest) returns (Response) {}
   rpc Version(NopRequest)  returns (Response) {}
   rpc Status(NopRequest) returns (StatusResponse) {}
+  rpc Create(ProgramInfo) returns (Response) {}
 }
 
 service Program {

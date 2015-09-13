@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -70,6 +71,25 @@ func (c *PbProgram) Tail(in *pb.TailRequest, stream pb.Program_TailServer) (err 
 
 type PbSuvServer struct {
 	lis net.Listener
+}
+
+func (s *PbSuvServer) Create(ctx context.Context, in *pb.ProgramInfo) (*pb.Response, error) {
+	pinfo := new(ProgramInfo)
+	pinfo.Name = in.Name
+	pinfo.Command = in.Command
+	pinfo.Dir = in.Directory
+	pinfo.Environ = in.Environ
+
+	log.Println(in.Name)
+	program := NewProgram(pinfo)
+	if err := programTable.AddProgram(program); err != nil {
+		return nil, err
+	}
+	program.InputData(EVENT_START)
+	res := new(pb.Response)
+	res.Code = 200
+	res.Message = fmt.Sprintf("%s: created", pinfo.Name)
+	return res, nil
 }
 
 func (s *PbSuvServer) Shutdown(ctx context.Context, in *pb.NopRequest) (*pb.Response, error) {

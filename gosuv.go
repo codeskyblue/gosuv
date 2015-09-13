@@ -5,17 +5,14 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/inject"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
-	"github.com/franela/goreq"
 	"github.com/qiniu/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -100,49 +97,34 @@ func StatusAction(client pb.GoSuvClient) {
 	}
 }
 
-func AddAction(ctx *cli.Context) {
+func AddAction(ctx *cli.Context, client pb.GoSuvClient) {
 	name := ctx.String("name")
-	dir, _ := os.Getwd()
-	if len(ctx.Args()) < 1 {
-		log.Fatal("need at least one args")
-	}
 	if name == "" {
 		name = filepath.Base(ctx.Args()[0])
 	}
-	log.Println(ctx.Args().Tail())
-	log.Println([]string(ctx.Args()))
-	log.Println(ctx.Args().Tail())
-	log.Println(ctx.StringSlice("env"))
-	log.Println("Dir:", dir)
+
+	dir, _ := os.Getwd()
+
+	if len(ctx.Args()) < 1 {
+		log.Fatal("need at least one args")
+	}
 	cmdName := ctx.Args().First()
-	log.Println("cmd name:", cmdName)
 	cmdPath, err := exec.LookPath(cmdName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("program: %s has been added\n", strconv.Quote(name))
-	p := &ProgramInfo{
-		Name:    name,
-		Dir:     dir,
-		Command: append([]string{cmdPath}, ctx.Args().Tail()...),
-		Environ: ctx.StringSlice("env"),
-	}
-	res, err := goreq.Request{
-		Method: "POST",
-		Uri:    buildURI(ctx, "/api/programs"),
-		Body:   p,
-	}.Do()
+
+	req := new(pb.ProgramInfo)
+	req.Name = ctx.String("name")
+	req.Directory = dir
+	req.Command = append([]string{cmdPath}, ctx.Args().Tail()...)
+	req.Environ = ctx.StringSlice("env")
+
+	res, err := client.Create(context.Background(), req)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var jres JSONResponse
-	if res.StatusCode != http.StatusOK {
-		log.Fatal(res.Body.ToString())
-	}
-	if err = res.Body.FromJsonTo(&jres); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(jres.Message)
+	fmt.Println(res.Message)
 }
 
 func buildURI(ctx *cli.Context, uri string) string {
@@ -352,10 +334,11 @@ func newPluginAction(name string) func(*cli.Context) {
 
 func runPlugin(ctx *cli.Context, name string) {
 	pluginDir := filepath.Join(CMDPLUGIN_DIR, name)
+	selfPath, _ := filepath.Abs(os.Args[0])
 	envs := []string{
 		"GOSUV_SERVER_ADDR=" + ctx.GlobalString("addr"),
 		"GOSUV_PLUGIN_NAME=" + name,
-		"GOSUV_PROGRAM=" + os.Args[0],
+		"GOSUV_PROGRAM=" + selfPath,
 	}
 	cmd := exec.Command(filepath.Join(pluginDir, "run"), ctx.Args()...)
 	cmd.Stdout = os.Stdout
