@@ -6,6 +6,10 @@ golang port of python-supervisor
 ## Program not implement
 **Not done yet.**
 
+## TODO
+* web control page
+* cli remove
+
 ## Require
 Go version at least `1.4`
 
