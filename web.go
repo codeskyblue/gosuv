@@ -92,18 +92,6 @@ func handleSignal(lis net.Listener) {
 func ServeAddr(addr string) error {
 	InitServer()
 
-	/*
-		t := tango.New()
-		t.Group("/api", func(g *tango.Group) {
-			g.Get("/version", versionHandler)
-			g.Post("/shutdown", shutdownHandler)
-			g.Post("/programs", addHandler)
-			g.Get("/programs", statusHandler)
-		})
-
-		go t.Run(addr)
-	*/
-
 	lis, err := net.Listen("unix", filepath.Join(GOSUV_HOME, "gosuv.sock"))
 	if err != nil {
 		log.Fatal(err)
