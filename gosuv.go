@@ -18,6 +18,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+const GOSUV_VERSION = "0.0.2"
+
 var (
 	CMDPLUGIN_DIR = filepath.Join(GOSUV_HOME, "cmdplugin")
 )
@@ -353,7 +355,6 @@ var (
 	GOSUV_HOME           = os.ExpandEnv("$HOME/.gosuv")
 	GOSUV_CONFIG         = filepath.Join(GOSUV_HOME, "gosuv.json")
 	GOSUV_PROGRAM_CONFIG = filepath.Join(GOSUV_HOME, "programs.json")
-	GOSUV_VERSION        = "0.0.1"
 )
 
 func main() {
