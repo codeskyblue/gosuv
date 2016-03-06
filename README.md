@@ -39,7 +39,7 @@ For binary version, just click
 	# see more usage
 	$ gosuv help
 
-# Config
+# Config(TODO)
 Config file load order `$HOME/.gosuvrc` `$PWD/gosuvrc`
 
 config example

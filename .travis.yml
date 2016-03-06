@@ -1,10 +1,5 @@
 language: go
 go:
   - 1.5
-env:
-  - "PATH=/home/travis/gopath/bin:$PATH"
 script:
-  - go get -v
-  - go test -v ./...
-after_success:
-  - bash -c "$(curl -fsSL http://bitly.com/gorelease)" gorelease
+  - go get -v .
