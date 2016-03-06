@@ -1,6 +1,12 @@
 # kproc
 [![GoDoc](https://godoc.org/github.com/codeskyblue/kproc?status.svg)](https://godoc.org/github.com/codeskyblue/kproc)
 
+# Now have been moved to [kexec](https://github.com/codeskyblue/kexec)
+
+This lib is not maintained any more. **!!!**
+
+----------
+
 This is a golang lib, offer a better way to kill all child process.
 
 Tested on _windows, linux, darwin._

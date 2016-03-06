@@ -1,15 +1,11 @@
 {
 	"ImportPath": "github.com/codeskyblue/gosuv",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.2",
 	"Deps": [
 		{
-			"ImportPath": "github.com/bradfitz/http2",
-			"Rev": "f8202bc903bda493ebba4aa54922d78430c2c42f"
-		},
-		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-139-g142e6cd",
-			"Rev": "142e6cd241a4dfbf7f07a018f1f8225180018da4"
+			"Comment": "1.2.0-219-ga294348",
+			"Rev": "a2943485b110df8842045ae0600047f88a3a56a1"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/inject",
@@ -18,20 +14,11 @@
 		},
 		{
 			"ImportPath": "github.com/codeskyblue/kproc",
-			"Rev": "fcb55eb35ab6b7290f395ad596e80e8355d52d69"
+			"Rev": "ded6d6ad96cefa26886dd2ebd1a61f9252a4bbd0"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "1dceb1a2654bdc74ca97ad91f71f500eecc96269"
-		},
-		{
-			"ImportPath": "github.com/lunny/log",
-			"Rev": "9ae5e9effeefca29cf00d932a7b54f1b2d70fd58"
-		},
-		{
-			"ImportPath": "github.com/lunny/tango",
-			"Comment": "v0.4.6-25-g652e7bd",
-			"Rev": "652e7bd578c564f7ae9307ed102d188e564baf54"
+			"Rev": "c75fbf01dc6cb73649c4cd4326182c3e44aa9dbb"
 		},
 		{
 			"ImportPath": "github.com/qiniu/log",
@@ -40,23 +27,27 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
+			"Rev": "08f168e593b5aab61849054b77981de812666697"
+		},
+		{
+			"ImportPath": "golang.org/x/net/http2",
+			"Rev": "08f168e593b5aab61849054b77981de812666697"
 		},
 		{
 			"ImportPath": "golang.org/x/net/internal/timeseries",
-			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
+			"Rev": "08f168e593b5aab61849054b77981de812666697"
 		},
 		{
 			"ImportPath": "golang.org/x/net/trace",
-			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
+			"Rev": "08f168e593b5aab61849054b77981de812666697"
 		},
 		{
 			"ImportPath": "google.golang.org/grpc",
-			"Rev": "6b6127d8c67b67f9f8509b84279eac053964e868"
+			"Rev": "fea7689493da00c4590150b3534c256a962259d3"
 		},
 		{
 			"ImportPath": "gopkg.in/gcfg.v1",
-			"Rev": "5866678811acbcbc248097f2c524cbc4d13abd8b"
+			"Rev": "083575c3955c85df16fe9590cceab64d03f5eb6e"
 		}
 	]
 }
