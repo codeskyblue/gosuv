@@ -206,7 +206,7 @@ func (p *Program) Start() error {
 
 var programTable *ProgramTable
 
-func InitServer() {
+func initProgramTable() {
 	programTable = &ProgramTable{
 		table: make(map[string]*Program, 10),
 		ch:    make(chan string),

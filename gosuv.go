@@ -18,7 +18,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-const GOSUV_VERSION = "0.0.2"
+const GOSUV_VERSION = "0.0.3"
+
+var (
+	GOSUV_HOME           = os.ExpandEnv("$HOME/.gosuv")
+	GOSUV_SOCK_PATH      = filepath.Join(GOSUV_HOME, "gosuv.sock")
+	GOSUV_CONFIG         = filepath.Join(GOSUV_HOME, "gosuv.json")
+	GOSUV_PROGRAM_CONFIG = filepath.Join(GOSUV_HOME, "programs.json")
+)
 
 var (
 	CMDPLUGIN_DIR = filepath.Join(GOSUV_HOME, "cmdplugin")
@@ -33,8 +40,7 @@ func MkdirIfNoExists(dir string) error {
 }
 
 func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
-	sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
-	conn, err := grpcDial("unix", sockPath)
+	conn, err := grpcDial("unix", GOSUV_SOCK_PATH)
 	return conn, err
 }
 
@@ -63,8 +69,7 @@ func wrap(f interface{}) func(*cli.Context) {
 			log.SetOutputLevel(log.Ldebug)
 		}
 
-		sockPath := filepath.Join(GOSUV_HOME, "gosuv.sock")
-		if err := testConnection("unix", sockPath); err != nil {
+		if err := testConnection("unix", GOSUV_SOCK_PATH); err != nil {
 			log.Fatal(err)
 		}
 
@@ -86,10 +91,10 @@ func wrap(f interface{}) func(*cli.Context) {
 
 func ServAction(ctx *cli.Context) {
 	addr := ctx.GlobalString("addr")
-	ServeAddr(addr)
+	RunGosuvService(addr)
 }
 
-func StatusAction(client pb.GoSuvClient) {
+func ActionStatus(client pb.GoSuvClient) {
 	res, err := client.Status(context.Background(), &pb.NopRequest{})
 	if err != nil {
 		log.Fatal(err)
@@ -99,7 +104,7 @@ func StatusAction(client pb.GoSuvClient) {
 	}
 }
 
-func AddAction(ctx *cli.Context, client pb.GoSuvClient) {
+func ActionAdd(ctx *cli.Context, client pb.GoSuvClient) {
 	name := ctx.String("name")
 	if name == "" {
 		name = filepath.Base(ctx.Args()[0])
@@ -133,7 +138,7 @@ func buildURI(ctx *cli.Context, uri string) string {
 	return fmt.Sprintf("http://%s%s", ctx.GlobalString("addr"), uri)
 }
 
-func StopAction(ctx *cli.Context) {
+func ActionStop(ctx *cli.Context) {
 	conn, err := connect(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -149,7 +154,7 @@ func StopAction(ctx *cli.Context) {
 	fmt.Println(res.Message)
 }
 
-func TailAction(ctx *cli.Context, client pb.ProgramClient) {
+func ActionTail(ctx *cli.Context, client pb.ProgramClient) {
 	req := &pb.TailRequest{
 		Name:   ctx.Args().First(),
 		Number: int32(ctx.Int("number")),
@@ -176,7 +181,7 @@ func Errorf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func StartAction(ctx *cli.Context) {
+func ActionStart(ctx *cli.Context) {
 	conn, err := connect(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -200,7 +205,7 @@ func grpcDial(network, addr string) (*grpc.ClientConn, error) {
 		}))
 }
 
-func ShutdownAction(ctx *cli.Context) {
+func ActionShutdown(ctx *cli.Context) {
 	conn, err := connect(ctx)
 	if err != nil {
 		fmt.Println("server already closed")
@@ -216,7 +221,7 @@ func ShutdownAction(ctx *cli.Context) {
 	fmt.Println(res.Message)
 }
 
-func VersionAction(ctx *cli.Context, client pb.GoSuvClient) {
+func ActionVersion(ctx *cli.Context, client pb.GoSuvClient) {
 	fmt.Printf("Client: %s\n", GOSUV_VERSION)
 	res, err := client.Version(context.Background(), &pb.NopRequest{})
 	if err != nil {
@@ -251,13 +256,13 @@ func initCli() {
 		{
 			Name:   "version",
 			Usage:  "Show version",
-			Action: wrap(VersionAction),
+			Action: wrap(ActionVersion),
 		},
 		{
 			Name:    "status",
 			Aliases: []string{"st"},
 			Usage:   "show program status",
-			Action:  wrap(StatusAction),
+			Action:  wrap(ActionStatus),
 		},
 		{
 			Name:  "add",
@@ -272,22 +277,22 @@ func initCli() {
 					Usage: "Specify environ",
 				},
 			},
-			Action: wrap(AddAction),
+			Action: wrap(ActionAdd),
 		},
 		{
 			Name:   "start",
 			Usage:  "start a not running program",
-			Action: wrap(StartAction),
+			Action: wrap(ActionStart),
 		},
 		{
 			Name:   "stop",
 			Usage:  "Stop running program",
-			Action: wrap(StopAction),
+			Action: wrap(ActionStop),
 		},
 		{
 			Name:   "tail",
 			Usage:  "tail log",
-			Action: wrap(TailAction),
+			Action: wrap(ActionTail),
 			Flags: []cli.Flag{
 				cli.IntFlag{
 					Name:  "number, n",
@@ -303,7 +308,7 @@ func initCli() {
 		{
 			Name:   "shutdown",
 			Usage:  "Shutdown server",
-			Action: ShutdownAction,
+			Action: ActionShutdown,
 		},
 		{
 			Name:   "serv",
@@ -350,13 +355,6 @@ func runPlugin(ctx *cli.Context, name string) {
 	cmd.Env = append(os.Environ(), envs...)
 	cmd.Run()
 }
-
-var (
-	GOSUV_HOME           = os.ExpandEnv("$HOME/.gosuv")
-	GOSUV_CONFIG         = filepath.Join(GOSUV_HOME, "gosuv.json")
-	GOSUV_PROGRAM_CONFIG = filepath.Join(GOSUV_HOME, "programs.json")
-)
-
 func main() {
 	MkdirIfNoExists(GOSUV_HOME)
 

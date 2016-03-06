@@ -2,17 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"net"
 	"net/http"
-	"os"
-	"os/signal"
-	"path/filepath"
-	"syscall"
-
-	pb "github.com/codeskyblue/gosuv/gosuvpb"
-	"github.com/qiniu/log"
-	"google.golang.org/grpc"
 )
 
 type JSONResponse struct {
@@ -72,6 +62,7 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 }
 */
 
+/*
 func handleSignal(lis net.Listener) {
 	sigc := make(chan os.Signal, 2)
 	signal.Notify(sigc, syscall.SIGINT, syscall.SIGHUP)
@@ -79,7 +70,7 @@ func handleSignal(lis net.Listener) {
 		for sig := range sigc {
 			log.Println("Receive signal:", sig)
 			if sig == syscall.SIGHUP {
-				return // ignore
+				return // ignore, when shell session closed, gosuv will receive SIGHUP signal
 			}
 			lis.Close()
 			programTable.StopAll()
@@ -90,7 +81,7 @@ func handleSignal(lis net.Listener) {
 }
 
 func ServeAddr(addr string) error {
-	InitServer()
+	initProgramTable()
 
 	lis, err := net.Listen("unix", filepath.Join(GOSUV_HOME, "gosuv.sock"))
 	if err != nil {
@@ -109,3 +100,4 @@ func ServeAddr(addr string) error {
 	grpcServ.Serve(lis)
 	return fmt.Errorf("Address: %s has been used", addr)
 }
+*/

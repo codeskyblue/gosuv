@@ -6,14 +6,16 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"time"
 
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
-type PbProgram struct {
-}
+type PbProgram struct{}
 
 func (this *PbProgram) Start(ctx context.Context, in *pb.Request) (res *pb.Response, err error) {
 	res = &pb.Response{}
@@ -121,4 +123,42 @@ func (s *PbSuvServer) Status(ctx context.Context, in *pb.NopRequest) (res *pb.St
 		res.Programs = append(res.Programs, ps)
 	}
 	return
+}
+
+func handleSignal(lis net.Listener) {
+	sigc := make(chan os.Signal, 2)
+	signal.Notify(sigc, syscall.SIGINT, syscall.SIGHUP)
+	go func() {
+		for sig := range sigc {
+			log.Println("Receive signal:", sig)
+			if sig == syscall.SIGHUP {
+				return // ignore, when shell session closed, gosuv will receive SIGHUP signal
+			}
+			lis.Close()
+			programTable.StopAll()
+			os.Exit(0)
+			return
+		}
+	}()
+}
+
+func RunGosuvService(addr string) error {
+	initProgramTable()
+
+	lis, err := net.Listen("unix", GOSUV_SOCK_PATH)
+	if err != nil {
+		log.Fatal(err)
+	}
+	handleSignal(lis)
+
+	pbServ := &PbSuvServer{}
+	pbProgram := &PbProgram{}
+
+	grpcServ := grpc.NewServer()
+	pb.RegisterGoSuvServer(grpcServ, pbServ)
+	pb.RegisterProgramServer(grpcServ, pbProgram)
+
+	pbServ.lis = lis
+	grpcServ.Serve(lis)
+	return fmt.Errorf("Address: %s has been used", addr)
 }
