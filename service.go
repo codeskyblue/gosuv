@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
+	"github.com/qiniu/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -36,6 +36,13 @@ func (this *PbProgram) Stop(ctx context.Context, in *pb.Request) (res *pb.Respon
 	}
 	program.InputData(EVENT_STOP)
 	res.Message = in.Name + ": stopped"
+	return res, nil
+}
+
+// Remove(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+func (s *PbProgram) Remove(ctx context.Context, in *pb.Request) (res *pb.Response, err error) {
+	res = &pb.Response{}
+	res.Message = "TODO: remove not finished. " + in.Name
 	return res, nil
 }
 

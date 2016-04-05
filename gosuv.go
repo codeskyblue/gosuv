@@ -154,6 +154,22 @@ func ActionStop(ctx *cli.Context) {
 	fmt.Println(res.Message)
 }
 
+func ActionRemove(ctx *cli.Context) {
+	conn, err := connect(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	name := ctx.Args().First()
+	client := pb.NewProgramClient(conn)
+	res, err := client.Remove(context.Background(), &pb.Request{Name: name})
+	if err != nil {
+		Errorf("ERR: %#v\n", err)
+	}
+	fmt.Println(res.Message)
+}
+
 func ActionTail(ctx *cli.Context, client pb.ProgramClient) {
 	req := &pb.TailRequest{
 		Name:   ctx.Args().First(),
@@ -288,6 +304,11 @@ func initCli() {
 			Name:   "stop",
 			Usage:  "Stop running program",
 			Action: wrap(ActionStop),
+		},
+		{
+			Name:   "remove",
+			Usage:  "Remove program",
+			Action: wrap(ActionRemove),
 		},
 		{
 			Name:   "tail",

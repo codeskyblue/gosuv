@@ -259,6 +259,7 @@ var _GoSuv_serviceDesc = grpc.ServiceDesc{
 type ProgramClient interface {
 	Start(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	Stop(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Remove(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	Tail(ctx context.Context, in *TailRequest, opts ...grpc.CallOption) (Program_TailClient, error)
 }
 
@@ -282,6 +283,15 @@ func (c *programClient) Start(ctx context.Context, in *Request, opts ...grpc.Cal
 func (c *programClient) Stop(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
 	err := grpc.Invoke(ctx, "/gosuvpb.Program/Stop", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *programClient) Remove(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := grpc.Invoke(ctx, "/gosuvpb.Program/Remove", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -325,6 +335,7 @@ func (x *programTailClient) Recv() (*LogLine, error) {
 type ProgramServer interface {
 	Start(context.Context, *Request) (*Response, error)
 	Stop(context.Context, *Request) (*Response, error)
+	Remove(context.Context, *Request) (*Response, error)
 	Tail(*TailRequest, Program_TailServer) error
 }
 
@@ -350,6 +361,18 @@ func _Program_Stop_Handler(srv interface{}, ctx context.Context, dec func(interf
 		return nil, err
 	}
 	out, err := srv.(ProgramServer).Stop(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Program_Remove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ProgramServer).Remove(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -388,6 +411,10 @@ var _Program_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Stop",
 			Handler:    _Program_Stop_Handler,
+		},
+		{
+			MethodName: "Remove",
+			Handler:    _Program_Remove_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
