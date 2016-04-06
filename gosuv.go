@@ -20,7 +20,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var GOSUV_VERSION = "Unknown"
+var GOSUV_VERSION = "UNKNOWN"
 
 var (
 	GOSUV_HOME           = os.ExpandEnv("$HOME/.gosuv")
