@@ -6,14 +6,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/codeskyblue/kproc"
+	"github.com/codeskyblue/kexec"
 	"github.com/qiniu/log"
 )
 
@@ -66,18 +65,18 @@ type ProgramInfo struct {
 	StartSeconds int      `json:"startsecs"`
 }
 
-func (p *ProgramInfo) buildCmd() *exec.Cmd {
-	cmd := exec.Command(p.Command[0], p.Command[1:]...)
+func (p *ProgramInfo) buildCmd() *kexec.KCommand {
+	cmd := kexec.Command(p.Command[0], p.Command[1:]...)
 	cmd.Dir = p.Dir
 	cmd.Env = append(os.Environ(), p.Environ...)
 	return cmd
 }
 
 type Program struct {
-	*kproc.Process `json:"-"`
-	Status         string         `json:"state"`
-	Sig            chan os.Signal `json:"-"`
-	Info           *ProgramInfo   `json:"info"`
+	*kexec.KCommand `json:"-"`
+	Status          string         `json:"state"`
+	Sig             chan os.Signal `json:"-"`
+	Info            *ProgramInfo   `json:"info"`
 
 	retry int
 	stopc chan bool
@@ -194,7 +193,7 @@ func (p *Program) Stop() error {
 }
 
 func (p *Program) Start() error {
-	p.Process = kproc.ProcCommand(p.Info.buildCmd())
+	p.KCommand = p.Info.buildCmd()
 	logFd, err := p.createLog()
 	if err != nil {
 		return err
@@ -217,7 +216,7 @@ func initProgramTable() {
 type ProgramTable struct {
 	table map[string]*Program
 	ch    chan string
-	mu    sync.Mutex
+	mu    sync.RWMutex
 }
 
 var (
@@ -262,6 +261,7 @@ func (pt *ProgramTable) loadConfig() error {
 func (pt *ProgramTable) AddProgram(p *Program) error {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
+
 	name := p.Info.Name
 	if _, exists := pt.table[name]; exists {
 		return ErrProgramDuplicate
@@ -272,25 +272,22 @@ func (pt *ProgramTable) AddProgram(p *Program) error {
 }
 
 func (pt *ProgramTable) Programs() []*Program {
-	pt.mu.Lock()
-	defer pt.mu.Unlock()
+	pt.mu.RLock()
+	defer pt.mu.RUnlock()
 	ps := make([]*Program, 0, len(pt.table))
 	names := []string{}
 	for name, _ := range pt.table {
 		names = append(names, name)
 	}
-	// log.Println(names)
 	sort.Strings(names)
-	// log.Println(names)
+
 	for _, name := range names {
 		ps = append(ps, pt.table[name])
 	}
-	// for _, p := range pt.table {
-	// ps = append(ps, p)
-	// }
 	return ps
 }
 
+// golang map get will alwyas be safe.
 func (pt *ProgramTable) Get(name string) (*Program, error) {
 	program, exists := pt.table[name]
 	if !exists {
@@ -303,6 +300,20 @@ func (pt *ProgramTable) StopAll() {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 	for _, program := range pt.table {
-		program.Stop()
+		program.InputData(EVENT_STOP)
 	}
+}
+
+func (pt *ProgramTable) Remove(name string) error {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+
+	program, exists := pt.table[name]
+	if !exists {
+		return ErrProgramNotExists
+	}
+	program.InputData(EVENT_STOP)
+	// program.Stop()
+	delete(pt.table, name)
+	return pt.saveConfig()
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -18,7 +20,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const GOSUV_VERSION = "0.0.3"
+var GOSUV_VERSION = "Unknown"
 
 var (
 	GOSUV_HOME           = os.ExpandEnv("$HOME/.gosuv")
@@ -44,23 +46,21 @@ func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
 	return conn, err
 }
 
-func testConnection(network, address string) error {
-	log.Debugf("test connection")
-	testconn, err := net.DialTimeout(network, address, time.Millisecond*100)
-	if err != nil {
-		log.Debugf("start run server")
+func DialWithRetry(network, address string) (conn *grpc.ClientConn, err error) {
+	conn, err = grpcDial(network, address)
+	if err == nil {
+		return
+	} else {
 		cmd := exec.Command(os.Args[0], "serv")
 		timeout := time.Millisecond * 500
 		er := <-GoTimeoutFunc(timeout, cmd.Run)
 		if er == ErrGoTimeout {
 			fmt.Println("server started")
 		} else {
-			return fmt.Errorf("server stared failed, %v", er)
+			return nil, fmt.Errorf("server stared failed, %v", er)
 		}
-	} else {
-		testconn.Close()
+		return grpcDial(network, address)
 	}
-	return nil
 }
 
 func wrap(f interface{}) func(*cli.Context) {
@@ -69,15 +69,12 @@ func wrap(f interface{}) func(*cli.Context) {
 			log.SetOutputLevel(log.Ldebug)
 		}
 
-		if err := testConnection("unix", GOSUV_SOCK_PATH); err != nil {
-			log.Fatal(err)
-		}
-
-		conn, err := connect(ctx)
+		conn, err := DialWithRetry("unix", GOSUV_SOCK_PATH)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer conn.Close()
+
 		programClient := pb.NewProgramClient(conn)
 		gosuvClient := pb.NewGoSuvClient(conn)
 
@@ -134,9 +131,9 @@ func ActionAdd(ctx *cli.Context, client pb.GoSuvClient) {
 	fmt.Println(res.Message)
 }
 
-func buildURI(ctx *cli.Context, uri string) string {
-	return fmt.Sprintf("http://%s%s", ctx.GlobalString("addr"), uri)
-}
+// func buildURI(ctx *cli.Context, uri string) string {
+// 	return fmt.Sprintf("http://%s%s", ctx.GlobalString("addr"), uri)
+// }
 
 func ActionStop(ctx *cli.Context) {
 	conn, err := connect(ctx)
@@ -154,15 +151,17 @@ func ActionStop(ctx *cli.Context) {
 	fmt.Println(res.Message)
 }
 
-func ActionRemove(ctx *cli.Context) {
-	conn, err := connect(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
+func ActionRemove(ctx *cli.Context, client pb.ProgramClient) {
 	name := ctx.Args().First()
-	client := pb.NewProgramClient(conn)
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Danger operation, Enter name again: ")
+	text, _ := reader.ReadString('\n')
+	text = strings.TrimSpace(text)
+	if text != name {
+		fmt.Println("Canceled.")
+		return
+	}
+
 	res, err := client.Remove(context.Background(), &pb.Request{Name: name})
 	if err != nil {
 		Errorf("ERR: %#v\n", err)
@@ -215,10 +214,13 @@ func ActionStart(ctx *cli.Context) {
 
 // grpc.Dial can't set network, so I have to implement this func
 func grpcDial(network, addr string) (*grpc.ClientConn, error) {
-	return grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDialer(
-		func(address string, timeout time.Duration) (conn net.Conn, err error) {
-			return net.DialTimeout(network, address, timeout)
-		}))
+	return grpc.Dial(addr,
+		grpc.WithInsecure(),
+		grpc.WithTimeout(time.Second*2),
+		grpc.WithDialer(
+			func(address string, timeout time.Duration) (conn net.Conn, err error) {
+				return net.DialTimeout(network, address, timeout)
+			}))
 }
 
 func ActionShutdown(ctx *cli.Context) {
@@ -238,12 +240,12 @@ func ActionShutdown(ctx *cli.Context) {
 }
 
 func ActionVersion(ctx *cli.Context, client pb.GoSuvClient) {
-	fmt.Printf("Client: %s\n", GOSUV_VERSION)
+	fmt.Printf("gosuv version:\n  client: %s\n", GOSUV_VERSION)
 	res, err := client.Version(context.Background(), &pb.NopRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Server: %s\n", res.Message)
+	fmt.Printf("  server: %s\n", res.Message)
 }
 
 var app *cli.App
@@ -320,7 +322,7 @@ func initCli() {
 					Value: 10,
 					Usage: "The location is number lines.",
 				},
-				cli.BoolFlag{
+				cli.BoolTFlag{
 					Name:  "follow, f",
 					Usage: "Constantly show log",
 				},

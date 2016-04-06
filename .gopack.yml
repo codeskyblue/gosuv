@@ -13,4 +13,4 @@ excludes:
   - \.git
 script:
   - go get -v
-  - go build
+  - sh build.sh
