@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"time"
 
-	. "github.com/codeskyblue/gosuv/config"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
 	. "github.com/codeskyblue/gosuv/program"
 	"golang.org/x/net/context"
@@ -72,7 +71,11 @@ func (this *PbProgram) Start(ctx context.Context, in *pb.Request) (res *pb.Respo
 		return
 	}
 	program.InputData(EVENT_START)
-	res.Message = in.Name + ": started"
+	if program.Status == ST_RUNNING {
+		res.Message = in.Name + ": already started"
+	} else {
+		res.Message = in.Name + ": started"
+	}
 	return res, nil
 }
 
