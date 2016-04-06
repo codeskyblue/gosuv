@@ -37,21 +37,28 @@ func connect(ctx *cli.Context) (cc *grpc.ClientConn, err error) {
 	return conn, err
 }
 
-func DialWithRetry(network, address string) (conn *grpc.ClientConn, err error) {
-	conn, err = grpcDial(network, address)
-	if err == nil {
-		return
-	} else {
-		cmd := exec.Command(os.Args[0], "serv")
-		timeout := time.Millisecond * 500
-		er := <-GoTimeoutFunc(timeout, cmd.Run)
-		if er == ErrGoTimeout {
-			fmt.Println("server started")
-		} else {
-			return nil, fmt.Errorf("server stared failed, %v", er)
-		}
-		return grpcDial(network, address)
+func startBackgroundServer() error {
+	cmd := exec.Command(os.Args[0], "serv")
+	timeout := time.Millisecond * 500
+	er := <-GoTimeoutFunc(timeout, cmd.Run)
+	if er == ErrGoTimeout {
+		return nil
 	}
+	return fmt.Errorf("server stared failed, %v", er)
+}
+
+func DialWithRetry(network, address string) (conn *grpc.ClientConn, err error) {
+	if network == "unix" {
+		if _, er := os.Stat(address); er != nil {
+			if err = startBackgroundServer(); err != nil {
+				log.Warnf("Server started failed.")
+				return nil, err
+			} else {
+				log.Info("gosuv server started")
+			}
+		}
+	}
+	return grpcDial(network, address)
 }
 
 func wrap(f interface{}) func(*cli.Context) {
