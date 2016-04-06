@@ -1,9 +1,8 @@
 // +build !windows
 
-package kproc
+package kexec
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -14,30 +13,31 @@ func setupCmd(cmd *exec.Cmd) {
 	cmd.SysProcAttr.Setsid = true
 }
 
-func ProcCommand(cmd *exec.Cmd) *Process {
+func Command(name string, arg ...string) *KCommand {
+	cmd := exec.Command(name, arg...)
 	setupCmd(cmd)
-	return &Process{
+	return &KCommand{
 		Cmd: cmd,
 	}
 }
 
-func ProcString(command string) *Process {
+func CommandString(command string) *KCommand {
 	cmd := exec.Command("/bin/bash", "-c", command)
 	setupCmd(cmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return &Process{
+	return &KCommand{
 		Cmd: cmd,
 	}
 }
 
-func (p *Process) Terminate(sig os.Signal) (err error) {
+func (p *KCommand) Terminate(sig os.Signal) (err error) {
 	if p.Process == nil {
 		return
 	}
 	// find pgid, ref: http://unix.stackexchange.com/questions/14815/process-descendants
 	group, err := os.FindProcess(-1 * p.Process.Pid)
-	log.Println(group)
+	//log.Println(group)
 	if err == nil {
 		err = group.Signal(sig)
 	}

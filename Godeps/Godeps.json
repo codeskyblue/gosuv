@@ -13,8 +13,8 @@
 			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
 		},
 		{
-			"ImportPath": "github.com/codeskyblue/kproc",
-			"Rev": "ded6d6ad96cefa26886dd2ebd1a61f9252a4bbd0"
+			"ImportPath": "github.com/codeskyblue/kexec",
+			"Rev": "b7e1983cb3267c8862794eacf39b14386dfa441f"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
