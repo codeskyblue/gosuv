@@ -8,7 +8,7 @@ golang port of python-supervisor
 
 ## TODO
 * web control page
-* cli remove
+* cli remove (DONE)
 
 ## Require
 Go version at least `1.4`
@@ -54,7 +54,7 @@ config example
 # State
 Only 4 states. [ref](http://supervisord.org/subprocess.html#process-states)
 
-![states](images/states.png)
+![states](docs/states.png)
 
 # Plugin Design
 Current plugins:
