@@ -31,10 +31,13 @@ For binary version, just click
 	$ gosuv stop timetest
 	program "timetest" stopped
 
-	$ gosuv tail -n 2 -f timetest
+	$ gosuv tail -n 2 timetest
 	line 1
 	line 2
 	line ...
+
+	$ gosuv remove timetest
+	# remove program which named timetest
 	
 	# see more usage
 	$ gosuv help

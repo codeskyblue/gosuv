@@ -17,4 +17,4 @@ then
 fi
 
 SHA=$(git rev-parse HEAD)
-exec go build -ldflags "-X main.GOSUV_VERSION=$VERSION"
+exec go build -ldflags "-X main.GOSUV_VERSION=$VERSION" "$@"

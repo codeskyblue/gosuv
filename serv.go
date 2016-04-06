@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	. "github.com/codeskyblue/gosuv/config"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
 	"github.com/qiniu/log"
 	"google.golang.org/grpc"

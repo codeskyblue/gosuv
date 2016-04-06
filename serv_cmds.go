@@ -7,7 +7,9 @@ import (
 	"os/exec"
 	"time"
 
+	. "github.com/codeskyblue/gosuv/config"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
+	. "github.com/codeskyblue/gosuv/program"
 	"golang.org/x/net/context"
 )
 
@@ -103,7 +105,7 @@ func (c *PbProgram) Tail(in *pb.TailRequest, stream pb.Program_TailServer) (err 
 	if in.Follow {
 		args = append(args, "-f")
 	}
-	cmd := exec.Command("tail", append(args, program.logFilePath())...)
+	cmd := exec.Command("tail", append(args, program.LogFilePath())...)
 	rd, err := cmd.StdoutPipe()
 	go cmd.Run()
 	defer func() {

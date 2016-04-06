@@ -14,24 +14,15 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/inject"
+	. "github.com/codeskyblue/gosuv/config"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
+	. "github.com/codeskyblue/gosuv/utils"
 	"github.com/qiniu/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 var GOSUV_VERSION = "UNKNOWN"
-
-var (
-	GOSUV_HOME           = os.ExpandEnv("$HOME/.gosuv")
-	GOSUV_SOCK_PATH      = filepath.Join(GOSUV_HOME, "gosuv.sock")
-	GOSUV_CONFIG         = filepath.Join(GOSUV_HOME, "gosuv.json")
-	GOSUV_PROGRAM_CONFIG = filepath.Join(GOSUV_HOME, "programs.json")
-)
-
-var (
-	CMDPLUGIN_DIR = filepath.Join(GOSUV_HOME, "cmdplugin")
-)
 
 func MkdirIfNoExists(dir string) error {
 	dir = os.ExpandEnv(dir)

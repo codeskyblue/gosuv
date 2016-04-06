@@ -5,6 +5,7 @@
 N=1
 while true
 do
-	sleep 5
-	exit 1
+    echo "Hello $N"
+	sleep 2
+    N=$(expr $N + 1)
 done
