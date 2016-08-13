@@ -3,8 +3,11 @@
 
 golang port of python-supervisor
 
+
 ## Program not implement
 **Not done yet.**
+
+God damn, maybe need to delete all the code and start from scrach again.
 
 ## TODO
 * web control page
