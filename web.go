@@ -15,6 +15,12 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 	json.NewEncoder(w).Encode(v)
 }
 
+func init() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello"))
+	})
+}
+
 /*
 func versionHandler(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, &JSONResponse{

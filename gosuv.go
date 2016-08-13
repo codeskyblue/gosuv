@@ -12,17 +12,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/codegangsta/inject"
 	. "github.com/codeskyblue/gosuv/config"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
 	. "github.com/codeskyblue/gosuv/utils"
 	"github.com/qiniu/log"
+	"github.com/urfave/cli"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-var GOSUV_VERSION = "UNKNOWN"
+var (
+	GitCommit  string
+	GitBranch  string
+	GitState   string
+	GitSummary string
+	BuildDate  string
+
+	GOSUV_VERSION = "UNKNOWN"
+)
 
 func MkdirIfNoExists(dir string) error {
 	dir = os.ExpandEnv(dir)
@@ -47,7 +55,7 @@ func startBackgroundServer() error {
 	return fmt.Errorf("server stared failed, %v", er)
 }
 
-func DialWithRetry(network, address string) (conn *grpc.ClientConn, err error) {
+func dialWithRetry(network, address string) (conn *grpc.ClientConn, err error) {
 	if network == "unix" {
 		if _, er := os.Stat(address); er != nil {
 			if err = startBackgroundServer(); err != nil {
@@ -67,7 +75,7 @@ func wrap(f interface{}) func(*cli.Context) {
 			log.SetOutputLevel(log.Ldebug)
 		}
 
-		conn, err := DialWithRetry("unix", GOSUV_SOCK_PATH)
+		conn, err := dialWithRetry("unix", GOSUV_SOCK_PATH)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -376,6 +384,7 @@ func runPlugin(ctx *cli.Context, name string) {
 	cmd.Env = append(os.Environ(), envs...)
 	cmd.Run()
 }
+
 func main() {
 	MkdirIfNoExists(GOSUV_HOME)
 
@@ -384,5 +393,5 @@ func main() {
 
 	app.HideHelp = false
 	app.HideVersion = true
-	app.RunAndExitOnError()
+	app.Run(os.Args)
 }

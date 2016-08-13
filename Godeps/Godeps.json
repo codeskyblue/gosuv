@@ -4,11 +4,6 @@
 	"GodepVersion": "v74",
 	"Deps": [
 		{
-			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-229-g9fec0fa",
-			"Rev": "9fec0fad02befc9209347cc6d620e68e1b45f74d"
-		},
-		{
 			"ImportPath": "github.com/codegangsta/inject",
 			"Comment": "v1.0-rc1-10-g33e0aa1",
 			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
@@ -25,6 +20,11 @@
 			"ImportPath": "github.com/qiniu/log",
 			"Comment": "v1.0.00-2-ge002bc2",
 			"Rev": "e002bc2020b19bfa61ed378cc5407383dbd2f346"
+		},
+		{
+			"ImportPath": "github.com/urfave/cli",
+			"Comment": "v1.18.0-47-g168c954",
+			"Rev": "168c95418e66e019fe17b8f4f5c45aa62ff80e23"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

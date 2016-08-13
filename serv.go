@@ -9,6 +9,7 @@ import (
 
 	. "github.com/codeskyblue/gosuv/config"
 	pb "github.com/codeskyblue/gosuv/gosuvpb"
+	. "github.com/codeskyblue/gosuv/utils"
 	"github.com/qiniu/log"
 	"google.golang.org/grpc"
 )
@@ -48,10 +49,16 @@ func RunGosuvService(addr string) error {
 	pbProgram := &PbProgram{}
 
 	grpcServ := grpc.NewServer()
-	pb.RegisterGoSuvServer(grpcServ, pbServ)
-	pb.RegisterProgramServer(grpcServ, pbProgram)
+	pb.RegisterGoSuvServer(grpcServ, pbServ)      // SystemServer
+	pb.RegisterProgramServer(grpcServ, pbProgram) // ProcessServer
 
 	pbServ.lis = lis
-	grpcServ.Serve(lis)
-	return fmt.Errorf("Address: %s has been used", addr)
+
+	select {
+	case err = <-GoFunc(func() error { return grpcServ.Serve(lis) }):
+		return fmt.Errorf("Address: %s has been used", addr)
+		// Start web server here
+	}
+	// grpcServ.Serve(lis)
+	return nil
 }
