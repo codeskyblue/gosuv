@@ -34,29 +34,36 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.ProtoPackageIsVersion1
+
 type NopRequest struct {
 }
 
-func (m *NopRequest) Reset()         { *m = NopRequest{} }
-func (m *NopRequest) String() string { return proto.CompactTextString(m) }
-func (*NopRequest) ProtoMessage()    {}
+func (m *NopRequest) Reset()                    { *m = NopRequest{} }
+func (m *NopRequest) String() string            { return proto.CompactTextString(m) }
+func (*NopRequest) ProtoMessage()               {}
+func (*NopRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 type Response struct {
 	Code    int32  `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
 	Message string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
 }
 
-func (m *Response) Reset()         { *m = Response{} }
-func (m *Response) String() string { return proto.CompactTextString(m) }
-func (*Response) ProtoMessage()    {}
+func (m *Response) Reset()                    { *m = Response{} }
+func (m *Response) String() string            { return proto.CompactTextString(m) }
+func (*Response) ProtoMessage()               {}
+func (*Response) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 type Request struct {
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 }
 
-func (m *Request) Reset()         { *m = Request{} }
-func (m *Request) String() string { return proto.CompactTextString(m) }
-func (*Request) ProtoMessage()    {}
+func (m *Request) Reset()                    { *m = Request{} }
+func (m *Request) String() string            { return proto.CompactTextString(m) }
+func (*Request) ProtoMessage()               {}
+func (*Request) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 type TailRequest struct {
 	Name   string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
@@ -64,20 +71,22 @@ type TailRequest struct {
 	Follow bool   `protobuf:"varint,3,opt,name=follow" json:"follow,omitempty"`
 }
 
-func (m *TailRequest) Reset()         { *m = TailRequest{} }
-func (m *TailRequest) String() string { return proto.CompactTextString(m) }
-func (*TailRequest) ProtoMessage()    {}
+func (m *TailRequest) Reset()                    { *m = TailRequest{} }
+func (m *TailRequest) String() string            { return proto.CompactTextString(m) }
+func (*TailRequest) ProtoMessage()               {}
+func (*TailRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 type ProgramInfo struct {
 	Name      string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	Directory string   `protobuf:"bytes,3,opt,name=directory" json:"directory,omitempty"`
-	Command   []string `protobuf:"bytes,2,rep,name=command" json:"command,omitempty"`
+	Command   string   `protobuf:"bytes,2,opt,name=command" json:"command,omitempty"`
 	Environ   []string `protobuf:"bytes,4,rep,name=environ" json:"environ,omitempty"`
 }
 
-func (m *ProgramInfo) Reset()         { *m = ProgramInfo{} }
-func (m *ProgramInfo) String() string { return proto.CompactTextString(m) }
-func (*ProgramInfo) ProtoMessage()    {}
+func (m *ProgramInfo) Reset()                    { *m = ProgramInfo{} }
+func (m *ProgramInfo) String() string            { return proto.CompactTextString(m) }
+func (*ProgramInfo) ProtoMessage()               {}
+func (*ProgramInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 type ProgramStatus struct {
 	Name   string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
@@ -85,17 +94,19 @@ type ProgramStatus struct {
 	Extra  string `protobuf:"bytes,3,opt,name=extra" json:"extra,omitempty"`
 }
 
-func (m *ProgramStatus) Reset()         { *m = ProgramStatus{} }
-func (m *ProgramStatus) String() string { return proto.CompactTextString(m) }
-func (*ProgramStatus) ProtoMessage()    {}
+func (m *ProgramStatus) Reset()                    { *m = ProgramStatus{} }
+func (m *ProgramStatus) String() string            { return proto.CompactTextString(m) }
+func (*ProgramStatus) ProtoMessage()               {}
+func (*ProgramStatus) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 type StatusResponse struct {
 	Programs []*ProgramStatus `protobuf:"bytes,1,rep,name=programs" json:"programs,omitempty"`
 }
 
-func (m *StatusResponse) Reset()         { *m = StatusResponse{} }
-func (m *StatusResponse) String() string { return proto.CompactTextString(m) }
-func (*StatusResponse) ProtoMessage()    {}
+func (m *StatusResponse) Reset()                    { *m = StatusResponse{} }
+func (m *StatusResponse) String() string            { return proto.CompactTextString(m) }
+func (*StatusResponse) ProtoMessage()               {}
+func (*StatusResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 func (m *StatusResponse) GetPrograms() []*ProgramStatus {
 	if m != nil {
@@ -108,13 +119,29 @@ type LogLine struct {
 	Line string `protobuf:"bytes,1,opt,name=line" json:"line,omitempty"`
 }
 
-func (m *LogLine) Reset()         { *m = LogLine{} }
-func (m *LogLine) String() string { return proto.CompactTextString(m) }
-func (*LogLine) ProtoMessage()    {}
+func (m *LogLine) Reset()                    { *m = LogLine{} }
+func (m *LogLine) String() string            { return proto.CompactTextString(m) }
+func (*LogLine) ProtoMessage()               {}
+func (*LogLine) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func init() {
+	proto.RegisterType((*NopRequest)(nil), "gosuvpb.NopRequest")
+	proto.RegisterType((*Response)(nil), "gosuvpb.Response")
+	proto.RegisterType((*Request)(nil), "gosuvpb.Request")
+	proto.RegisterType((*TailRequest)(nil), "gosuvpb.TailRequest")
+	proto.RegisterType((*ProgramInfo)(nil), "gosuvpb.ProgramInfo")
+	proto.RegisterType((*ProgramStatus)(nil), "gosuvpb.ProgramStatus")
+	proto.RegisterType((*StatusResponse)(nil), "gosuvpb.StatusResponse")
+	proto.RegisterType((*LogLine)(nil), "gosuvpb.LogLine")
+}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion1
 
 // Client API for GoSuv service
 
@@ -424,4 +451,34 @@ var _Program_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
+}
+
+var fileDescriptor0 = []byte{
+	// 403 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x53, 0x4d, 0x6f, 0xd3, 0x40,
+	0x10, 0xad, 0x89, 0x3f, 0xc7, 0x6d, 0xa1, 0x0b, 0xa2, 0x56, 0x4f, 0xd5, 0x9e, 0xc2, 0x01, 0x83,
+	0x5c, 0x0e, 0x08, 0xb8, 0x71, 0x40, 0x48, 0x15, 0xaa, 0x62, 0xc4, 0x7d, 0x13, 0x4f, 0x8d, 0x25,
+	0x7b, 0xc7, 0xec, 0xae, 0x5d, 0xf8, 0x91, 0xfc, 0x08, 0xfe, 0x09, 0xfe, 0xc2, 0x4d, 0x4b, 0x84,
+	0xc2, 0x29, 0x9a, 0xc9, 0x7b, 0x6f, 0xde, 0xbc, 0x59, 0x43, 0x98, 0x93, 0x6e, 0xda, 0xb8, 0x56,
+	0x64, 0x88, 0x79, 0x43, 0x51, 0xaf, 0xf9, 0x21, 0xc0, 0x27, 0xaa, 0x57, 0xf8, 0xad, 0x41, 0x6d,
+	0xf8, 0x33, 0xf0, 0x57, 0xa8, 0x6b, 0x92, 0x1a, 0xd9, 0x21, 0xd8, 0x1b, 0xca, 0x30, 0xb2, 0xce,
+	0xad, 0xa5, 0xc3, 0x1e, 0x82, 0x57, 0xa1, 0xd6, 0x22, 0xc7, 0xe8, 0x41, 0xd7, 0x08, 0xf8, 0x29,
+	0x78, 0x13, 0xab, 0x47, 0x4a, 0x51, 0x8d, 0xc8, 0x80, 0xbf, 0x85, 0xf0, 0xb3, 0x28, 0xca, 0x9d,
+	0x7f, 0xb2, 0x63, 0x70, 0x65, 0x53, 0xad, 0x51, 0x0d, 0x2a, 0x4e, 0x5f, 0x5f, 0x53, 0x59, 0xd2,
+	0x4d, 0xb4, 0xe8, 0x6a, 0x9f, 0x5f, 0x41, 0x78, 0xa5, 0x28, 0x57, 0xa2, 0xfa, 0x28, 0xaf, 0xe9,
+	0x1e, 0xf9, 0x04, 0x82, 0xac, 0x50, 0xb8, 0x31, 0xa4, 0x7e, 0x0c, 0xf8, 0xa0, 0xb7, 0xb5, 0xa1,
+	0xaa, 0x12, 0x32, 0x1b, 0x6d, 0xf5, 0x0d, 0x94, 0x6d, 0xa1, 0x48, 0x46, 0xf6, 0xf9, 0xa2, 0xb3,
+	0xf3, 0x0e, 0x8e, 0x26, 0xc5, 0xd4, 0x08, 0xd3, 0xe8, 0xbf, 0x0d, 0xe9, 0xa1, 0x3f, 0xf1, 0x8f,
+	0xc0, 0xc1, 0xef, 0x46, 0x89, 0x51, 0x9f, 0xbf, 0x81, 0xe3, 0x91, 0x36, 0xc7, 0xb2, 0x04, 0xbf,
+	0x1e, 0xf5, 0x74, 0x27, 0xb1, 0x58, 0x86, 0xc9, 0xd3, 0x78, 0x0a, 0x33, 0xbe, 0x33, 0xa8, 0x4f,
+	0xe8, 0x92, 0xf2, 0xcb, 0x42, 0x0e, 0x59, 0x96, 0xdd, 0xef, 0x38, 0x33, 0xf9, 0x65, 0x81, 0xf3,
+	0x81, 0xd2, 0xa6, 0x65, 0xaf, 0xc0, 0x4f, 0xbf, 0x36, 0x26, 0xa3, 0x1b, 0xc9, 0x1e, 0xcf, 0x32,
+	0xb7, 0x07, 0x39, 0x3b, 0x99, 0x9b, 0x7f, 0x0c, 0xf0, 0x03, 0x76, 0x01, 0xde, 0x17, 0x54, 0xba,
+	0xa0, 0xff, 0x21, 0xbd, 0x06, 0x77, 0x0a, 0x60, 0x27, 0xe7, 0x74, 0x6e, 0xde, 0xdd, 0x77, 0x18,
+	0xe7, 0xbe, 0x57, 0x28, 0x0c, 0xb2, 0x27, 0xf7, 0x37, 0xed, 0x8f, 0xb4, 0x73, 0x5c, 0xf2, 0xd3,
+	0x02, 0x6f, 0x02, 0xb1, 0x18, 0x9c, 0x4e, 0x54, 0x19, 0xf6, 0x68, 0x0b, 0xf9, 0x0f, 0xab, 0xcf,
+	0xc1, 0x4e, 0x0d, 0xd5, 0xfb, 0xc2, 0x5f, 0x80, 0xbb, 0xc2, 0x8a, 0x5a, 0xdc, 0x97, 0x90, 0x80,
+	0xdd, 0xbf, 0xd0, 0xad, 0x75, 0xb6, 0x1e, 0xec, 0xd9, 0xad, 0xc8, 0x74, 0x3d, 0x7e, 0xf0, 0xd2,
+	0x5a, 0xbb, 0xc3, 0x77, 0x73, 0xf1, 0x3b, 0x00, 0x00, 0xff, 0xff, 0xb8, 0x35, 0x2e, 0xee, 0x46,
+	0x03, 0x00, 0x00,
 }

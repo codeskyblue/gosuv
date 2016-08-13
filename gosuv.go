@@ -127,7 +127,7 @@ func ActionAdd(ctx *cli.Context, client pb.GoSuvClient) {
 	req := new(pb.ProgramInfo)
 	req.Name = ctx.String("name")
 	req.Directory = dir
-	req.Command = append([]string{cmdPath}, ctx.Args().Tail()...)
+	req.Command = strings.Join(append([]string{cmdPath}, ctx.Args().Tail()...), " ")
 	req.Environ = ctx.StringSlice("env")
 
 	res, err := client.Create(context.Background(), req)

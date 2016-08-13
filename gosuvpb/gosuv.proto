@@ -21,7 +21,7 @@ message TailRequest {
 message ProgramInfo {
   string name = 1;
   string directory = 3;
-  repeated string command = 2;
+  string command = 2;
   repeated string environ = 4;
 }
 

@@ -30,7 +30,7 @@ const (
 
 type ProgramInfo struct {
 	Name         string   `json:"name"`
-	Command      []string `json:"command"`
+	Command      string   `json:"command"`
 	Environ      []string `json:"environ"`
 	Dir          string   `json:"directory"`
 	AutoStart    bool     `json:"autostart"` // change to *bool, which support unexpected
@@ -40,7 +40,8 @@ type ProgramInfo struct {
 }
 
 func (p *ProgramInfo) buildCmd() *kexec.KCommand {
-	cmd := kexec.Command(p.Command[0], p.Command[1:]...)
+	cmd := kexec.CommandString(p.Command) // Not tested here, I think it should work
+	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
 	cmd.Dir = p.Dir
 	cmd.Env = append(os.Environ(), p.Environ...)
 	return cmd
