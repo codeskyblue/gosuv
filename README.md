@@ -10,15 +10,11 @@ golang port of python-supervisor
 * web control page
 * cli remove (DONE)
 
-## Require
-Go version at least `1.4`
+## Requirements
+Go version at least `1.5+`
 
 ## Install
 	go get -v github.com/codeskyblue/gosuv
-
-For binary version, just click
-
-[![gorelease](https://dn-gorelease.qbox.me/gorelease-download-blue.svg)](https://gobuild.io/codeskyblue/gosuv)
 
 ## Usage
 	$ gosuv add --name timetest -- bash -c "while true; do date; sleep 1; done"
@@ -43,13 +39,18 @@ For binary version, just click
 	$ gosuv help
 
 # Config(TODO)
-Config file load order `$HOME/.gosuvrc` `$PWD/gosuvrc`
+`~/.gosuv/config.yml` content example
 
-config example
+```yaml
+---
+listen:
+  web: 0.0.0.0:9090
+  rpc: 127.0.0.1:54637
+```
 
-	[server]
-	web-addr = 0.0.0.0:9090
-	rpc-addr = 127.0.0.1:54637
+All process save to `~/.gosuv/procs.yml`
+
+Web page will be look like just a table, have command `Start|Stop|Restart`, and got state
 
 # State
 Only 4 states. [ref](http://supervisord.org/subprocess.html#process-states)
