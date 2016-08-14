@@ -9,6 +9,21 @@ golang port of python-supervisor
 
 God damn, maybe need to delete all the code and start from scrach again.
 
+So need redesign, bye the old code
+
+```
+GET /api/procs
+GET /api/procs/:name
+
+PUT /api/procs/:name
+
+	- action: <restart|start|stop>
+
+POST /api/procs
+
+DELETE /api/procs/:name
+```
+
 ## TODO
 * web control page
 * cli remove (DONE)
