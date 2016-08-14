@@ -24,6 +24,11 @@ POST /api/procs
 DELETE /api/procs/:name
 ```
 
+Features
+
+* [ ] Log view
+* [ ] Github webhook
+
 ## TODO
 * web control page
 * cli remove (DONE)
