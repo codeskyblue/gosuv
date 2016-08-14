@@ -73,49 +73,107 @@ var (
 	RestartEvent = FSMEvent("restart")
 )
 
-type ProcessFSM struct {
-	*FSM
-
-	Cmd        *kexec.KCommand
-	retryCount int
-	retryLeft  int
+type Program struct {
+	Name         string   `yaml:"name"`
+	Command      string   `yaml:"command"`
+	Environ      []string `yaml:"environ"`
+	Dir          string   `yaml:"directory"`
+	AutoStart    bool     `yaml:"autostart"` // change to *bool, which support unexpected
+	StartRetries int      `yaml:"startretries"`
+	StartSeconds int      `yaml:"startsecs"`
+	LogDir       string   `yaml:"logdir"`
 }
 
-func NewProcessFSM() *ProcessFSM {
-	return &ProcessFSM{
-		FSM:        NewFSM(Stopped),
-		retryCount: 3,
-		retryLeft:  0,
+type Process struct {
+	*FSM
+	Program
+	cmd       *kexec.KCommand
+	retryLeft int
+}
+
+func (p *Process) buildCommand() *kexec.KCommand {
+	cmd := kexec.CommandString(p.Command) // Not tested here, I think it should work
+	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
+	cmd.Dir = p.Dir
+	cmd.Env = append(os.Environ(), p.Environ...)
+	return cmd
+}
+
+func (p *Process) waitNextRetry() {
+	p.SetState(RetryWait)
+	if p.retryLeft <= 0 {
+		p.retryLeft = p.StartRetries
+		p.SetState(Fatal)
+		return
+	}
+	p.retryLeft -= 1
+	select {
+	case <-time.After(2 * time.Second): // TODO: need put it into Program
+		go p.Operate(StartEvent)
 	}
 }
 
-func init() {
-	proc := NewProcessFSM()
-	log.Println(proc.State())
-	proc.AddHandler(Stopped, StartEvent, func() {
-		proc.SetState(Running)
-		proc.Cmd = kexec.CommandString("echo hello world && sleep 10 && echo end")
-		proc.Cmd.Stdout = os.Stdout
+func (p *Process) waitExit() {
+	select {
+	case <-GoFunc(p.cmd.Wait):
+	}
+}
+
+func NewProcess(pg Program) *Process {
+	pr := &Process{
+		FSM:       NewFSM(Stopped),
+		Program:   pg,
+		retryLeft: pg.StartRetries,
+	}
+
+	startFunc := func() {
+		pr.SetState(Running)
+		pr.cmd = kexec.CommandString("echo hello world && sleep 10 && echo end")
+		pr.cmd.Stdout = os.Stdout
 		go func() {
-			var err error
+			errC := GoFunc(pr.cmd.Run)
 			select {
-			case err = <-GoFunc(proc.Cmd.Run):
+			case err := <-errC: //<-GoTimeoutFunc(time.Duration(pr.StartSeconds)*time.Second, pr.cmd.Run):
 				log.Println(err)
-				proc.SetState(Stopped)
+				pr.waitNextRetry()
+				return
+			case <-time.After(time.Duration(pr.StartSeconds) * time.Second):
+				pr.retryLeft = pr.StartRetries // reset retries if success
+			}
+			// wait until exit
+			select {
+			case err := <-errC:
+				log.Println(err)
+				pr.waitNextRetry()
 			}
 		}()
-	}).AddHandler(Running, StopEvent, func() {
-		proc.Cmd.Terminate(syscall.SIGKILL)
+	}
+
+	pr.AddHandler(Stopped, StartEvent, startFunc)
+	pr.AddHandler(Fatal, StartEvent, startFunc)
+
+	pr.AddHandler(Running, StopEvent, func() {
+		pr.cmd.Terminate(syscall.SIGKILL)
 	}).AddHandler(Stopped, RestartEvent, func() {
-		go proc.Operate(StartEvent)
+		go pr.Operate(StartEvent)
 	}).AddHandler(Running, RestartEvent, func() {
 		go func() {
-			proc.Operate(StopEvent)
-			// 	// TODO: start laterly
+			pr.Operate(StopEvent)
+			// TODO: start laterly
 			time.Sleep(1 * time.Second)
-			proc.Operate(StartEvent)
+			pr.Operate(StartEvent)
 		}()
 	})
+	return pr
+}
+
+func init() {
+	pg := Program{
+		Name:    "demo",
+		Command: "echo hello world && sleep 1 && echo end",
+	}
+	proc := NewProcess(pg)
+	log.Println(proc.State())
 
 	proc.Operate(RestartEvent)
 	log.Println(proc.State())
