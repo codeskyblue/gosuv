@@ -1,3 +1,17 @@
+// 研究了一天的状态机，天气也热，正当我写的即将昏迷之际，我突然醒悟了，原来状态机是这么一回事
+// - 状态比喻成 数据结构
+// - 事件比喻成 用户输入
+// - 状态转移则是函数调用
+// 如此依赖写成函数，也就是 (Orz 原来如此)
+// type FSM struct {
+// 	State 			FSMState
+// 	TransformFuncs  map[FSMState] func()
+// }
+
+// func (f *FSM) UserAction(action FSMAction) {
+// 	...
+// }
+
 package main
 
 import (
@@ -81,13 +95,14 @@ type Program struct {
 	AutoStart    bool     `yaml:"autostart"` // change to *bool, which support unexpected
 	StartRetries int      `yaml:"startretries"`
 	StartSeconds int      `yaml:"startsecs"`
-	LogDir       string   `yaml:"logdir"`
+	// LogDir       string   `yaml:"logdir"`
 }
 
 type Process struct {
 	*FSM
 	Program
 	cmd       *kexec.KCommand
+	stopC     chan int
 	retryLeft int
 }
 
@@ -110,41 +125,45 @@ func (p *Process) waitNextRetry() {
 	select {
 	case <-time.After(2 * time.Second): // TODO: need put it into Program
 		go p.Operate(StartEvent)
+	case <-p.stopC:
+		p.stopCommand()
 	}
 }
 
-func (p *Process) waitExit() {
-	select {
-	case <-GoFunc(p.cmd.Wait):
+func (p *Process) stopCommand() {
+	if p.cmd != nil {
+		p.cmd.Terminate(syscall.SIGKILL)
 	}
+	p.SetState(Stopped)
 }
 
 func NewProcess(pg Program) *Process {
 	pr := &Process{
 		FSM:       NewFSM(Stopped),
 		Program:   pg,
+		stopC:     make(chan int),
 		retryLeft: pg.StartRetries,
 	}
 
 	startFunc := func() {
-		pr.SetState(Running)
+		pr.retryLeft = pr.StartRetries
 		pr.cmd = kexec.CommandString("echo hello world && sleep 10 && echo end")
 		pr.cmd.Stdout = os.Stdout
+
+		pr.SetState(Running)
 		go func() {
 			errC := GoFunc(pr.cmd.Run)
+			startTime := time.Now()
 			select {
 			case err := <-errC: //<-GoTimeoutFunc(time.Duration(pr.StartSeconds)*time.Second, pr.cmd.Run):
 				log.Println(err)
+				if time.Since(startTime) < time.Duration(pr.StartSeconds) {
+					pr.SetState(Fatal)
+					return
+				}
 				pr.waitNextRetry()
-				return
-			case <-time.After(time.Duration(pr.StartSeconds) * time.Second):
-				pr.retryLeft = pr.StartRetries // reset retries if success
-			}
-			// wait until exit
-			select {
-			case err := <-errC:
-				log.Println(err)
-				pr.waitNextRetry()
+			case <-pr.stopC:
+				pr.stopCommand()
 			}
 		}()
 	}
@@ -154,8 +173,6 @@ func NewProcess(pg Program) *Process {
 
 	pr.AddHandler(Running, StopEvent, func() {
 		pr.cmd.Terminate(syscall.SIGKILL)
-	}).AddHandler(Stopped, RestartEvent, func() {
-		go pr.Operate(StartEvent)
 	}).AddHandler(Running, RestartEvent, func() {
 		go func() {
 			pr.Operate(StopEvent)
@@ -168,20 +185,20 @@ func NewProcess(pg Program) *Process {
 }
 
 func init() {
-	pg := Program{
-		Name:    "demo",
-		Command: "echo hello world && sleep 1 && echo end",
-	}
-	proc := NewProcess(pg)
-	log.Println(proc.State())
+	// pg := Program{
+	// 	Name:    "demo",
+	// 	Command: "echo hello world && sleep 1 && echo end",
+	// }
+	// proc := NewProcess(pg)
+	// log.Println(proc.State())
 
-	proc.Operate(RestartEvent)
-	log.Println(proc.State())
-	time.Sleep(2 * time.Second)
-	log.Println(proc.State())
-	proc.Operate(StopEvent)
-	time.Sleep(1 * time.Second)
-	log.Println(proc.State())
+	// proc.Operate(StartEvent)
+	// log.Println(proc.State())
+	// time.Sleep(2 * time.Second)
+	// log.Println(proc.State())
+	// proc.Operate(StopEvent)
+	// time.Sleep(1 * time.Second)
+	// log.Println(proc.State())
 	// log.Println(light.State)
 	// light.AddHandler(Opened, Close, func() {
 	// 	log.Println("Close light")
