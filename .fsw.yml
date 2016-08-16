@@ -13,4 +13,4 @@ triggers:
   signal: KILL
 watch_paths:
 - .
-watch_depth: 5
+watch_depth: 0

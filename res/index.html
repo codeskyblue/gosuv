@@ -2,11 +2,69 @@
 <html>
 
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>gosuv</title>
+  <link rel="shortcut icon" type="image/png" href="/res/favicon.png" />
+  <link rel="stylesheet" type="text/css" href="/res/bootstrap-3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="/res/font-awesome-4.6.3/css/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css" href="/res/css/style.css">
 </head>
 
-<body>
-  <h1>Hello</h1>
+<body id="app">
+  <nav class="navbar navbar-inverse">
+    <div class="container">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Go Supervisor</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
+          <ul class="nav navbar-nav">
+            <li class="hidden-xs">
+              <a>
+                <span class="glyphicon glyphicon-qrcode"></span>
+              </a>
+            </li>
+          </ul>
+          <ul id="nav-right-bar" class="nav navbar-nav navbar-right">
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="col-md-12">
+      <table class="table">
+        <thead>
+          <tr>
+            <td>Name</td>
+            <td>Status</td>
+            <td>Command</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>gohttpserver</td>
+            <td>Running</td>
+            <td>
+              <button class="btn btn-default btn-xs">
+                <span class="glyphicon glyphicon-play"></span> Start
+              </button>
+              <button class="btn btn-default btn-xs">
+                <span class="glyphicon glyphicon-stop"></span> Stop
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </body>
 
 </html>

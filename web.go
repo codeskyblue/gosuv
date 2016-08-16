@@ -61,6 +61,8 @@ func (s *Supervisor) AddProgram(w http.ResponseWriter, r *http.Request) {
 		Name:    r.FormValue("name"),
 		Command: r.FormValue("command"),
 	}
+	// TODO: need check pg
+	// pg.Check() error
 	w.Header().Set("Content-Type", "application/json")
 	var data []byte
 	if _, ok := s.pgMap[pg.Name]; ok {
@@ -82,5 +84,8 @@ func init() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.Index)
 	r.HandleFunc("/api/programs", suv.AddProgram).Methods("POST")
+
+	fs := http.FileServer(http.Dir("res"))
 	http.Handle("/", r)
+	http.Handle("/res/", http.StripPrefix("/res/", fs))
 }
