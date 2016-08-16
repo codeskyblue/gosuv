@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
+	"github.com/qiniu/log"
 )
 
 type Supervisor struct {
@@ -62,8 +62,30 @@ func (s *Supervisor) loadDB() error {
 	if err = yaml.Unmarshal(data, pgs); err != nil {
 		return err
 	}
+	// add or update program
+	visited := map[string]bool{}
 	for _, pg := range pgs {
+		if visited[pg.Name] {
+			log.Warnf("Duplicated program name: %s", pg.Name)
+			continue
+		}
+		visited[pg.Name] = true
 		s.addOrUpdateProgram(pg)
+	}
+	// delete not exists program
+	for _, pg := range s.pgs {
+		if visited[pg.Name] {
+			continue
+		}
+		name := pg.Name
+		s.procMap[name].Operate(StopEvent)
+		delete(s.procMap, name)
+		delete(s.pgMap, name)
+	}
+	// update programs (because of delete)
+	s.pgs = make([]*Program, 0, len(s.pgMap))
+	for _, pg := range s.pgMap {
+		s.pgs = append(s.pgs, pg)
 	}
 	return nil
 }
