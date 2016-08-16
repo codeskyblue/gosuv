@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/qiniu/log"
@@ -30,4 +31,9 @@ func GoTimeoutFunc(timeout time.Duration, f func() error) chan error {
 		}
 	}()
 	return ch
+}
+
+func IsDir(dir string) bool {
+	fi, err := os.Stat(dir)
+	return err == nil && fi.IsDir()
 }

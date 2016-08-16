@@ -15,6 +15,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -98,6 +100,19 @@ type Program struct {
 	// LogDir       string   `yaml:"logdir"`
 }
 
+func (p *Program) Check() error {
+	if p.Name == "" {
+		return errors.New("Program name empty")
+	}
+	if p.Command == "" {
+		return errors.New("Program command empty")
+	}
+	if p.Dir != "" && !IsDir(p.Dir) {
+		return fmt.Errorf("Program dir(%s) not exists", p.Dir)
+	}
+	return nil
+}
+
 type Process struct {
 	*FSM
 	Program
@@ -135,6 +150,10 @@ func (p *Process) stopCommand() {
 		p.cmd.Terminate(syscall.SIGKILL)
 	}
 	p.SetState(Stopped)
+}
+
+func (p *Process) IsRunning() bool {
+	return p.State() == Running || p.State() == RetryWait
 }
 
 func NewProcess(pg Program) *Process {
