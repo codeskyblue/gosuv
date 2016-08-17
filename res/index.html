@@ -40,7 +40,12 @@
   </nav>
   <div class="container">
     <div class="col-md-12">
-      <table class="table">
+      <button class="btn btn-default btn-sm" id="launchNewProgram">
+        <span class="glyphicon glyphicon-plus"></span> New Program
+      </button>
+    </div>
+    <div class="col-md-12">
+      <table class="table table-hover">
         <thead>
           <tr>
             <td>Name</td>
@@ -49,9 +54,9 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
+          <tr class="success">
             <td>gohttpserver</td>
-            <td>Running</td>
+            <td>Running(2h)</td>
             <td>
               <button class="btn btn-default btn-xs">
                 <span class="glyphicon glyphicon-play"></span> Start
@@ -59,12 +64,87 @@
               <button class="btn btn-default btn-xs">
                 <span class="glyphicon glyphicon-stop"></span> Stop
               </button>
+              <button class="btn btn-default btn-xs" disabled="true">
+                <span class="glyphicon glyphicon-minus"></span> Tailf
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+    <!-- panels -->
+    <!-- modals -->
+    <div class="modal" id="newProgram">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Modal title</h4>
+          </div>
+          <div class="modal-body">
+            <p>Program setting&hellip;</p>
+            <form>
+              <div class="form-group">
+                <label>Name</label>
+                <input type="text" class="form-control" placeholder="name (must be unique)">
+              </div>
+              <div class="form-group">
+                <label>Command</label>
+                <input type="text" class="form-control" placeholder="shell command, ex: redis-server --port 6379">
+              </div>
+              <div class="form-group">
+                <label for="exampleInputFile">File input</label>
+                <input type="file" id="exampleInputFile">
+                <p class="help-block">Example block-level help text here.</p>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox"> Check me out
+                </label>
+              </div>
+              <button type="submit" class="btn btn-default">Submit</button>
+            </form>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Panel title</h3>
+              </div>
+              <div class="panel-body">
+                Panel content
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+          </div>
+        </div>
+        <!-- /.modal-content -->
+      </div>
+      <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
   </div>
+  <script src="/res/js/jquery-3.1.0.min.js"></script>
+  <script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+  <script src="/res/js/moment.min.js"></script>
+  <script src="/res/js/underscore-min.js"></script>
+  <script src="/res/js/vue-1.0.min.js"></script>
+  <script type="text/javascript">
+  $(function() {
+    $("#launchNewProgram").click(function() {
+      $("#newProgram").modal({
+        show: true,
+        // keyboard: false,
+        backdrop: 'static',
+      })
+    })
+    $("#newProgram").modal({
+      show: true,
+      // keyboard: false,
+      backdrop: 'static',
+    })
+  });
+  </script>
 </body>
 
 </html>

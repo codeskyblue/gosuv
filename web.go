@@ -98,15 +98,16 @@ func (s *Supervisor) saveDB() error {
 	return ioutil.WriteFile(s.programPath(), data, 0644)
 }
 
-func (s *Supervisor) Index(w http.ResponseWriter, r *http.Request) {
+func (s *Supervisor) hIndex(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.New("t").ParseFiles("./res/index.html"))
 	t.ExecuteTemplate(w, "index.html", nil)
 }
 
-func (s *Supervisor) AddProgram(w http.ResponseWriter, r *http.Request) {
+func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 	pg := Program{
 		Name:    r.FormValue("name"),
 		Command: r.FormValue("command"),
+		Dir:     r.FormValue("dir"),
 		// TODO: missing other values
 	}
 	if err := pg.Check(); err != nil {
@@ -133,8 +134,8 @@ func (s *Supervisor) AddProgram(w http.ResponseWriter, r *http.Request) {
 func init() {
 	suv := &Supervisor{}
 	r := mux.NewRouter()
-	r.HandleFunc("/", suv.Index)
-	r.HandleFunc("/api/programs", suv.AddProgram).Methods("POST")
+	r.HandleFunc("/", suv.hIndex)
+	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 
 	fs := http.FileServer(http.Dir("res"))
 	http.Handle("/", r)

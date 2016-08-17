@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	GitSummary string = "unknown"
+	Version string = "dev"
 )
 
 func actionServ(c *cli.Context) error {
@@ -28,7 +28,7 @@ func actionStatus(c *cli.Context) error {
 func main() {
 	app := cli.NewApp()
 	app.Name = "gosuv"
-	app.Version = GitSummary
+	app.Version = Version
 	app.Usage = "golang port of python-supervisor"
 	app.Commands = []cli.Command{
 		{
