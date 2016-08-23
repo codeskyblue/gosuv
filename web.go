@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/go-yaml/yaml"
@@ -28,6 +31,7 @@ func (s *Supervisor) programPath() string {
 func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
+		log.Println("Orig:", origPg, "Curr:", pg)
 		if !reflect.DeepEqual(origPg, &pg) {
 			log.Println("Update:", pg.Name)
 			origProc := s.procMap[pg.Name]
@@ -54,22 +58,36 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 	return s.saveDB()
 }
 
-func (s *Supervisor) loadDB() error {
+// Check
+// - Yaml format
+// - Duplicated program
+func (s *Supervisor) readConfigFromDB() (pgs []Program, err error) {
 	data, err := ioutil.ReadFile(s.programPath())
 	if err != nil {
 		data = []byte("")
 	}
-	pgs := make([]Program, 0)
-	if err = yaml.Unmarshal(data, pgs); err != nil {
+	pgs = make([]Program, 0)
+	if err = yaml.Unmarshal(data, &pgs); err != nil {
+		return nil, err
+	}
+	visited := map[string]bool{}
+	for _, pg := range pgs {
+		if visited[pg.Name] {
+			return nil, fmt.Errorf("Duplicated program name: %s", pg.Name)
+		}
+		visited[pg.Name] = true
+	}
+	return
+}
+
+func (s *Supervisor) loadDB() error {
+	pgs, err := s.readConfigFromDB()
+	if err != nil {
 		return err
 	}
 	// add or update program
 	visited := map[string]bool{}
 	for _, pg := range pgs {
-		if visited[pg.Name] {
-			log.Warnf("Duplicated program name: %s", pg.Name)
-			continue
-		}
 		visited[pg.Name] = true
 		s.addOrUpdateProgram(pg)
 	}
@@ -92,6 +110,11 @@ func (s *Supervisor) loadDB() error {
 }
 
 func (s *Supervisor) saveDB() error {
+	dir := filepath.Dir(s.programPath())
+	if !IsDir(dir) {
+		os.MkdirAll(dir, 0755)
+	}
+
 	data, err := yaml.Marshal(s.pgs)
 	if err != nil {
 		return err
@@ -112,7 +135,6 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 		AutoStart: r.FormValue("autostart") == "on",
 		// TODO: missing other values
 	}
-	log.Println(r.FormValue("autostart"))
 	if pg.Dir == "" {
 		pg.Dir = "/"
 	}
@@ -126,6 +148,7 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.pgMap[pg.Name]; ok {
 		data, _ = json.Marshal(map[string]interface{}{
 			"status": 1,
+			"error":  fmt.Sprintf("Program %s already exists", strconv.Quote(pg.Name)),
 		})
 	} else {
 		if err := s.addOrUpdateProgram(pg); err != nil {
@@ -144,9 +167,12 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 
 func init() {
 	suv := &Supervisor{
-		ConfigDir: UserHomeDir(),
+		ConfigDir: filepath.Join(UserHomeDir(), ".gosuv"),
 		pgMap:     make(map[string]*Program, 0),
 		procMap:   make(map[string]*Process, 0),
+	}
+	if err := suv.loadDB(); err != nil {
+		log.Fatal(err)
 	}
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.hIndex)

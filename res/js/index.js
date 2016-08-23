@@ -80,7 +80,11 @@ $(function() {
             data: data,
             success: function(data) {
                 console.log(data);
-                $("#newProgram").modal('hide');
+                if (data.status === 0) {
+                    $("#newProgram").modal('hide');
+                } else {
+                    window.alert(data.error);
+                }
             },
             error: function(err) {
                 console.log(err.responseText);
@@ -88,22 +92,5 @@ $(function() {
         })
         e.preventDefault()
     });
-    // $("#formNewProgram").ajaxForm(function(e) {
-    //     alert("Thanks");
-    //     e.preventDefault()
-    // });
-    // var clipboard = new Clipboard('.btn');
-    // clipboard.on('success', function(e) {
-    //     console.info('Action:', e.action);
-    //     console.info('Text:', e.text);
-    //     console.info('Trigger:', e.trigger);
-    //     $(e.trigger)
-    //         .tooltip('show')
-    //         .mouseleave(function() {
-    //             $(this).tooltip('hide');
-    //         })
-
-    //     e.clearSelection();
-    // });
 
 });
