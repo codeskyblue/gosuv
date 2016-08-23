@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/qiniu/log"
@@ -36,4 +37,15 @@ func GoTimeoutFunc(timeout time.Duration, f func() error) chan error {
 func IsDir(dir string) bool {
 	fi, err := os.Stat(dir)
 	return err == nil && fi.IsDir()
+}
+
+func UserHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
 }

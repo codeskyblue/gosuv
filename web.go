@@ -25,7 +25,7 @@ func (s *Supervisor) programPath() string {
 	return filepath.Join(s.ConfigDir, "programs.yml")
 }
 
-func (s *Supervisor) addOrUpdateProgram(pg Program) {
+func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
 		if !reflect.DeepEqual(origPg, &pg) {
@@ -51,6 +51,7 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) {
 		s.procMap[pg.Name] = NewProcess(pg)
 		log.Println("Add:", pg.Name)
 	}
+	return s.saveDB()
 }
 
 func (s *Supervisor) loadDB() error {
@@ -105,10 +106,15 @@ func (s *Supervisor) hIndex(w http.ResponseWriter, r *http.Request) {
 
 func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 	pg := Program{
-		Name:    r.FormValue("name"),
-		Command: r.FormValue("command"),
-		Dir:     r.FormValue("dir"),
+		Name:      r.FormValue("name"),
+		Command:   r.FormValue("command"),
+		Dir:       r.FormValue("dir"),
+		AutoStart: r.FormValue("autostart") == "on",
 		// TODO: missing other values
+	}
+	log.Println(r.FormValue("autostart"))
+	if pg.Dir == "" {
+		pg.Dir = "/"
 	}
 	if err := pg.Check(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -122,17 +128,26 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 			"status": 1,
 		})
 	} else {
-		s.addOrUpdateProgram(pg)
-
-		data, _ = json.Marshal(map[string]interface{}{
-			"status": 0,
-		})
+		if err := s.addOrUpdateProgram(pg); err != nil {
+			data, _ = json.Marshal(map[string]interface{}{
+				"status": 1,
+				"error":  err.Error(),
+			})
+		} else {
+			data, _ = json.Marshal(map[string]interface{}{
+				"status": 0,
+			})
+		}
 	}
 	w.Write(data)
 }
 
 func init() {
-	suv := &Supervisor{}
+	suv := &Supervisor{
+		ConfigDir: UserHomeDir(),
+		pgMap:     make(map[string]*Program, 0),
+		procMap:   make(map[string]*Process, 0),
+	}
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.hIndex)
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")

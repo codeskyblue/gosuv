@@ -77,46 +77,36 @@
     <div class="modal" id="newProgram">
       <div class="modal-dialog">
         <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title">Modal title</h4>
-          </div>
-          <div class="modal-body">
-            <p>Program setting&hellip;</p>
-            <form>
+          <form id="formNewProgram" action="/api/programs" method="post">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title">New program</h4>
+            </div>
+            <div class="modal-body">
               <div class="form-group">
                 <label>Name</label>
-                <input type="text" class="form-control" placeholder="name (must be unique)">
+                <input type="text" name="name" v-model="program.name" class="form-control" value="h" placeholder="name (must be unique)" required>
               </div>
               <div class="form-group">
                 <label>Command</label>
-                <input type="text" class="form-control" placeholder="shell command, ex: redis-server --port 6379">
+                <input type="text" name="command" value="redis-server --port 7788" class="form-control" placeholder="shell command, ex: redis-server --port 6379">
               </div>
               <div class="form-group">
-                <label for="exampleInputFile">File input</label>
-                <input type="file" id="exampleInputFile">
-                <p class="help-block">Example block-level help text here.</p>
+                <label>Directory</label>
+                <input type="text" name="dir" class="form-control" placeholder="directory, default is /">
               </div>
               <div class="checkbox">
                 <label>
-                  <input type="checkbox"> Check me out
+                  <input name="autostart" type="checkbox"> Auto start
                 </label>
               </div>
-              <button type="submit" class="btn btn-default">Submit</button>
-            </form>
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h3 class="panel-title">Panel title</h3>
-              </div>
-              <div class="panel-body">
-                Panel content
-              </div>
+              <button type="submit" class="btn btn-Wdefault">Submit</button>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary">Save changes</button>
-          </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+          </form>
         </div>
         <!-- /.modal-content -->
       </div>
@@ -125,10 +115,12 @@
     <!-- /.modal -->
   </div>
   <script src="/res/js/jquery-3.1.0.min.js"></script>
+  <script src="/res/js/jquery.form.min.js"></script>
   <script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>
   <script src="/res/js/moment.min.js"></script>
   <script src="/res/js/underscore-min.js"></script>
   <script src="/res/js/vue-1.0.min.js"></script>
+  <script src="/res/js/index.js"></script>
   <script type="text/javascript">
   $(function() {
     $("#launchNewProgram").click(function() {
