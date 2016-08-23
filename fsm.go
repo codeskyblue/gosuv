@@ -34,6 +34,8 @@ type FSM struct {
 	mu       sync.Mutex
 	state    FSMState
 	handlers map[FSMState]map[FSMEvent]FSMHandler
+
+	StateChange func(oldState, newState FSMState)
 }
 
 func (f *FSM) AddHandler(state FSMState, event FSMEvent, hdlr FSMHandler) *FSM {
@@ -53,6 +55,9 @@ func (f *FSM) State() FSMState {
 }
 
 func (f *FSM) SetState(newState FSMState) {
+	if f.StateChange != nil {
+		f.StateChange(f.state, newState)
+	}
 	f.state = newState
 }
 
@@ -90,13 +95,13 @@ var (
 )
 
 type Program struct {
-	Name         string   `yaml:"name"`
-	Command      string   `yaml:"command"`
-	Environ      []string `yaml:"environ"`
-	Dir          string   `yaml:"directory"`
-	AutoStart    bool     `yaml:"autostart"` // change to *bool, which support unexpected
-	StartRetries int      `yaml:"startretries"`
-	StartSeconds int      `yaml:"startsecs"`
+	Name         string   `yaml:"name" json:"name"`
+	Command      string   `yaml:"command" json:"command"`
+	Environ      []string `yaml:"environ" json:"environ"`
+	Dir          string   `yaml:"directory" json:"directory"`
+	AutoStart    bool     `yaml:"autostart" json:"autostart"` // change to *bool, which support unexpected
+	StartRetries int      `yaml:"startretries" json:"startretries"`
+	StartSeconds int      `yaml:"startsecs" json:"startsecs"`
 	// LogDir       string   `yaml:"logdir"`
 }
 
@@ -114,11 +119,12 @@ func (p *Program) Check() error {
 }
 
 type Process struct {
-	*FSM
-	Program
+	*FSM      `json:"-"`
+	Program   `json:"program"`
 	cmd       *kexec.KCommand
 	stopC     chan int
 	retryLeft int
+	Status    string `json:"status"`
 }
 
 func (p *Process) buildCommand() *kexec.KCommand {
@@ -162,6 +168,9 @@ func NewProcess(pg Program) *Process {
 		Program:   pg,
 		stopC:     make(chan int),
 		retryLeft: pg.StartRetries,
+	}
+	pr.StateChange = func(_, newStatus FSMState) {
+		pr.Status = string(newStatus)
 	}
 
 	startFunc := func() {

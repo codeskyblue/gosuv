@@ -15,12 +15,15 @@ function getQueryString(name) {
 var vm = new Vue({
     el: "#app",
     data: {
-        program: {
-            name: "",
-            command: "",
-            dir: "",
-            autoStart: true,
-        },
+        programs: [{
+            program: {
+                name: "gggg",
+                command: "",
+                dir: "",
+                autoStart: true,
+            },
+            status: "running",
+        }],
     },
     methods: {
         addNewProgram: function() {
@@ -69,8 +72,19 @@ Vue.filter('formatBytes', function(value) {
     else return (bytes / 1073741824).toFixed(1) + " GB";
 })
 
+var refreshPrograms = function() {
+    $.ajax({
+        url: "/api/programs",
+        success: function(data) {
+            console.log(data)
+            vm.programs = data;
+        }
+    });
+}
 
 $(function() {
+    refreshPrograms();
+
     $("#formNewProgram").submit(function(e) {
         var url = "/api/programs",
             data = $(this).serialize();

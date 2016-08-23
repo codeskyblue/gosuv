@@ -54,6 +54,21 @@
           </tr>
         </thead>
         <tbody>
+          <tr v-for="p in programs">
+            <td v-text="p.program.name"></td>
+            <td v-text="p.status"></td>
+            <td>
+              <button class="btn btn-default btn-xs">
+                <span class="glyphicon glyphicon-play"></span> Start
+              </button>
+              <button class="btn btn-default btn-xs">
+                <span class="glyphicon glyphicon-stop"></span> Stop
+              </button>
+              <button class="btn btn-default btn-xs" disabled="true">
+                <span class="glyphicon glyphicon-minus"></span> Tailf
+              </button>
+            </td>
+          </tr>
           <tr class="success">
             <td>gohttpserver</td>
             <td>Running(2h)</td>

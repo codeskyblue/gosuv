@@ -31,7 +31,7 @@ func (s *Supervisor) programPath() string {
 func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
-		log.Println("Orig:", origPg, "Curr:", pg)
+		// log.Println("Orig:", origPg, "Curr:", pg)
 		if !reflect.DeepEqual(origPg, &pg) {
 			log.Println("Update:", pg.Name)
 			origProc := s.procMap[pg.Name]
@@ -127,6 +127,22 @@ func (s *Supervisor) hIndex(w http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(w, "index.html", nil)
 }
 
+func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
+	procs := make([]*Process, 0, len(s.pgs))
+	for _, pg := range s.pgs {
+		procs = append(procs, s.procMap[pg.Name])
+	}
+	log.Println(procs[0])
+	data, err := json.Marshal(procs)
+	log.Println(string(data))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
 func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 	pg := Program{
 		Name:      r.FormValue("name"),
@@ -176,6 +192,7 @@ func init() {
 	}
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.hIndex)
+	r.HandleFunc("/api/programs", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 
 	fs := http.FileServer(http.Dir("res"))
