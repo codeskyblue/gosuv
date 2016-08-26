@@ -1,0 +1,37 @@
+{
+	"ImportPath": "github.com/codeskyblue/gosuv",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/codeskyblue/kexec",
+			"Rev": "b7e1983cb3267c8862794eacf39b14386dfa441f"
+		},
+		{
+			"ImportPath": "github.com/go-yaml/yaml",
+			"Rev": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "ee1815431e497d3850809578c93ab6705f1a19f7"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Rev": "b6ab76f1fe9803ee1d59e7e5b2a797c1fe897ce5"
+		},
+		{
+			"ImportPath": "github.com/qiniu/log",
+			"Comment": "v1.0.00-2-ge002bc2",
+			"Rev": "e002bc2020b19bfa61ed378cc5407383dbd2f346"
+		},
+		{
+			"ImportPath": "github.com/urfave/cli",
+			"Comment": "v1.18.0-47-g168c954",
+			"Rev": "168c95418e66e019fe17b8f4f5c45aa62ff80e23"
+		}
+	]
+}
