@@ -122,7 +122,7 @@ type Process struct {
 	*FSM      `json:"-"`
 	Program   `json:"program"`
 	cmd       *kexec.KCommand
-	stopC     chan int
+	stopC     chan syscall.Signal
 	retryLeft int
 	Status    string `json:"status"`
 }
@@ -152,9 +152,12 @@ func (p *Process) waitNextRetry() {
 }
 
 func (p *Process) stopCommand() {
-	if p.cmd != nil {
-		p.cmd.Terminate(syscall.SIGKILL)
+	if p.cmd == nil {
+		return
 	}
+	p.cmd.Terminate(syscall.SIGKILL)
+	p.cmd = nil
+	time.Sleep(200 * time.Millisecond)
 	p.SetState(Stopped)
 }
 
@@ -163,7 +166,9 @@ func (p *Process) IsRunning() bool {
 }
 
 func (p *Process) startCommand() {
-	p.cmd = kexec.CommandString("echo hello world && sleep 4 && echo end")
+	p.stopCommand()
+	log.Println("start cmd:", p.Name, p.Command)
+	p.cmd = kexec.CommandString(p.Command)
 	p.cmd.Stdout = os.Stdout
 
 	p.SetState(Running)
@@ -182,6 +187,7 @@ func (p *Process) startCommand() {
 			}
 			p.waitNextRetry()
 		case <-p.stopC:
+			log.Println("recv stop command")
 			p.stopCommand()
 		}
 	}()
@@ -191,7 +197,7 @@ func NewProcess(pg Program) *Process {
 	pr := &Process{
 		FSM:       NewFSM(Stopped),
 		Program:   pg,
-		stopC:     make(chan int),
+		stopC:     make(chan syscall.Signal),
 		retryLeft: pg.StartRetries,
 		Status:    string(Stopped),
 	}
@@ -209,7 +215,10 @@ func NewProcess(pg Program) *Process {
 	pr.AddHandler(Fatal, StartEvent, pr.startCommand)
 
 	pr.AddHandler(Running, StopEvent, func() {
-		pr.cmd.Terminate(syscall.SIGKILL)
+		select {
+		case pr.stopC <- syscall.SIGTERM:
+		case <-time.After(200 * time.Millisecond):
+		}
 	}).AddHandler(Running, RestartEvent, func() {
 		go func() {
 			pr.Operate(StopEvent)

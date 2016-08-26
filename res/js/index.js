@@ -82,6 +82,22 @@ var vm = new Vue({
                 }
             })
         },
+        cmdStop: function(name) {
+            $.ajax({
+                url: "/api/programs/" + name + "/stop",
+                method: 'post',
+                success: function(data) {
+                    console.log(data);
+                }
+            })
+        },
+        canStop: function(status) {
+            switch (status) {
+                case "running":
+                case "retry wait":
+                    return true;
+            }
+        }
     }
 })
 
@@ -113,7 +129,6 @@ $(function() {
             url: url,
             data: data,
             success: function(data) {
-                console.log(data);
                 if (data.status === 0) {
                     $("#newProgram").modal('hide');
                 } else {

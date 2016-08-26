@@ -7,10 +7,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/go-yaml/yaml"
@@ -36,7 +38,6 @@ func (s *Supervisor) newProcess(pg Program) *Process {
 	p := NewProcess(pg)
 	origFunc := p.StateChange
 	p.StateChange = func(oldState, newState FSMState) {
-		log.Println(newState)
 		s.broadcastEvent(string(newState))
 		origFunc(oldState, newState)
 	}
@@ -48,10 +49,8 @@ func (s *Supervisor) broadcastEvent(event string) {
 	defer s.mu.Unlock()
 	validEventCs := make([]chan string, 0, len(s.eventCs))
 	for _, c := range s.eventCs {
-		log.Println("start send events")
 		select {
 		case c <- event:
-			log.Println("Send events")
 			validEventCs = append(validEventCs, c)
 		case <-time.After(500 * time.Millisecond):
 			log.Println("Chan closed, remove from queue")
@@ -61,6 +60,8 @@ func (s *Supervisor) broadcastEvent(event string) {
 }
 
 func (s *Supervisor) addOrUpdateProgram(pg Program) error {
+	defer s.broadcastEvent("add or update")
+
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
 		if !reflect.DeepEqual(origPg, &pg) {
@@ -173,11 +174,17 @@ func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
+	retries, err := strconv.Atoi(r.FormValue("retries"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 	pg := Program{
-		Name:      r.FormValue("name"),
-		Command:   r.FormValue("command"),
-		Dir:       r.FormValue("dir"),
-		AutoStart: r.FormValue("autostart") == "on",
+		Name:         r.FormValue("name"),
+		Command:      r.FormValue("command"),
+		Dir:          r.FormValue("dir"),
+		AutoStart:    r.FormValue("autostart") == "on",
+		StartRetries: retries,
 		// TODO: missing other values
 	}
 	if pg.Dir == "" {
@@ -211,7 +218,6 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Supervisor) hStartProgram(w http.ResponseWriter, r *http.Request) {
-	log.Println("Hello")
 	name := mux.Vars(r)["name"]
 	proc, ok := s.procMap[name]
 	var data []byte
@@ -222,6 +228,25 @@ func (s *Supervisor) hStartProgram(w http.ResponseWriter, r *http.Request) {
 		})
 	} else {
 		proc.Operate(StartEvent)
+		data, _ = json.Marshal(map[string]interface{}{
+			"status": 0,
+			"name":   name,
+		})
+	}
+	w.Write(data)
+}
+
+func (s *Supervisor) hStopProgram(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+	proc, ok := s.procMap[name]
+	var data []byte
+	if !ok {
+		data, _ = json.Marshal(map[string]interface{}{
+			"status": 1,
+			"error":  fmt.Sprintf("Process %s not exists", strconv.Quote(name)),
+		})
+	} else {
+		proc.Operate(StopEvent)
 		data, _ = json.Marshal(map[string]interface{}{
 			"status": 0,
 			"name":   name,
@@ -244,9 +269,8 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 	s.eventCs = append(s.eventCs, ch)
 	go func() {
 		for message := range ch {
-			log.Println(message)
+			// Question: type 1 ?
 			c.WriteMessage(1, []byte(message))
-			// c.WriteMessage(mt, message)
 		}
 		close(ch)
 	}()
@@ -265,6 +289,20 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Supervisor) catchExitSignal() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-c
+		fmt.Printf("Got signal: %v, stopping all running process\n", sig)
+		for _, proc := range s.procMap {
+			proc.stopCommand()
+		}
+		fmt.Println("Finished. Exit with code 0")
+		os.Exit(0)
+	}()
+}
+
 func init() {
 	suv := &Supervisor{
 		ConfigDir: filepath.Join(UserHomeDir(), ".gosuv"),
@@ -275,11 +313,14 @@ func init() {
 	if err := suv.loadDB(); err != nil {
 		log.Fatal(err)
 	}
+	suv.catchExitSignal()
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.hIndex)
 	r.HandleFunc("/api/programs", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
+	r.HandleFunc("/api/programs/{name}/stop", suv.hStopProgram).Methods("POST")
 	r.HandleFunc("/ws/events", suv.wsEvents)
 
 	fs := http.FileServer(http.Dir("res"))
