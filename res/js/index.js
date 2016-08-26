@@ -12,6 +12,9 @@ function getQueryString(name) {
     return null;
 }
 
+var ws;
+var wsProtocol = location.protocol == "https:" ? "wss" : "ws";
+
 var vm = new Vue({
     el: "#app",
     data: {
@@ -57,6 +60,7 @@ var vm = new Vue({
             return this.breadcrumb;
         },
         refresh: function() {
+            // ws.send("Hello")
             console.log("RR");
             $.ajax({
                 url: "/api/programs",
@@ -64,6 +68,9 @@ var vm = new Vue({
                     vm.programs = data;
                 }
             });
+        },
+        test: function() {
+            ws.send("Test");
         },
         cmdStart: function(name) {
             console.log(name);
@@ -119,5 +126,24 @@ $(function() {
         })
         e.preventDefault()
     });
+
+    console.log("HEE")
+    ws = new WebSocket(wsProtocol + "://" + location.host + "/ws/events");
+    ws.onopen = function(evt) {
+        console.log("OPEN");
+    }
+    ws.onclose = function(evt) {
+        console.log("CLOSE");
+        ws = null;
+    }
+    ws.onmessage = function(evt) {
+        console.log("response:" + evt.data);
+        vm.refresh();
+    }
+    ws.onerror = function(evt) {
+        console.log("error:", evt.data);
+    }
+
+    // ws.send("Hello")
 
 });
