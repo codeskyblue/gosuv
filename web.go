@@ -31,7 +31,6 @@ func (s *Supervisor) programPath() string {
 func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
-		// log.Println("Orig:", origPg, "Curr:", pg)
 		if !reflect.DeepEqual(origPg, &pg) {
 			log.Println("Update:", pg.Name)
 			origProc := s.procMap[pg.Name]
@@ -181,6 +180,26 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func (s *Supervisor) hStartProgram(w http.ResponseWriter, r *http.Request) {
+	log.Println("Hello")
+	name := mux.Vars(r)["name"]
+	proc, ok := s.procMap[name]
+	var data []byte
+	if !ok {
+		data, _ = json.Marshal(map[string]interface{}{
+			"status": 1,
+			"error":  fmt.Sprintf("Process %s not exists", strconv.Quote(name)),
+		})
+	} else {
+		proc.Operate(StartEvent)
+		data, _ = json.Marshal(map[string]interface{}{
+			"status": 0,
+			"name":   name,
+		})
+	}
+	w.Write(data)
+}
+
 func init() {
 	suv := &Supervisor{
 		ConfigDir: filepath.Join(UserHomeDir(), ".gosuv"),
@@ -194,6 +213,7 @@ func init() {
 	r.HandleFunc("/", suv.hIndex)
 	r.HandleFunc("/api/programs", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
+	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
 
 	fs := http.FileServer(http.Dir("res"))
 	http.Handle("/", r)

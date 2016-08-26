@@ -145,7 +145,7 @@ func (p *Process) waitNextRetry() {
 	p.retryLeft -= 1
 	select {
 	case <-time.After(2 * time.Second): // TODO: need put it into Program
-		go p.Operate(StartEvent)
+		p.startCommand()
 	case <-p.stopC:
 		p.stopCommand()
 	}
@@ -162,42 +162,51 @@ func (p *Process) IsRunning() bool {
 	return p.State() == Running || p.State() == RetryWait
 }
 
+func (p *Process) startCommand() {
+	p.cmd = kexec.CommandString("echo hello world && sleep 4 && echo end")
+	p.cmd.Stdout = os.Stdout
+
+	p.SetState(Running)
+	go func() {
+		errC := GoFunc(p.cmd.Run)
+		startTime := time.Now()
+		select {
+		case err := <-errC: //<-GoTimeoutFunc(time.Duration(p.StartSeconds)*time.Second, p.cmd.Run):
+			log.Println(err, time.Since(startTime))
+			if time.Since(startTime) < time.Duration(p.StartSeconds)*time.Second {
+				if p.retryLeft == p.StartRetries { // If first time quit so fast, just set to fatal
+					p.SetState(Fatal)
+					log.Println("Start change to fatal")
+					return
+				}
+			}
+			p.waitNextRetry()
+		case <-p.stopC:
+			p.stopCommand()
+		}
+	}()
+}
+
 func NewProcess(pg Program) *Process {
 	pr := &Process{
 		FSM:       NewFSM(Stopped),
 		Program:   pg,
 		stopC:     make(chan int),
 		retryLeft: pg.StartRetries,
+		Status:    string(Stopped),
 	}
 	pr.StateChange = func(_, newStatus FSMState) {
 		pr.Status = string(newStatus)
 	}
-
-	startFunc := func() {
-		pr.retryLeft = pr.StartRetries
-		pr.cmd = kexec.CommandString("echo hello world && sleep 10 && echo end")
-		pr.cmd.Stdout = os.Stdout
-
-		pr.SetState(Running)
-		go func() {
-			errC := GoFunc(pr.cmd.Run)
-			startTime := time.Now()
-			select {
-			case err := <-errC: //<-GoTimeoutFunc(time.Duration(pr.StartSeconds)*time.Second, pr.cmd.Run):
-				log.Println(err)
-				if time.Since(startTime) < time.Duration(pr.StartSeconds) {
-					pr.SetState(Fatal)
-					return
-				}
-				pr.waitNextRetry()
-			case <-pr.stopC:
-				pr.stopCommand()
-			}
-		}()
+	if pr.StartSeconds <= 0 {
+		pr.StartSeconds = 3
 	}
 
-	pr.AddHandler(Stopped, StartEvent, startFunc)
-	pr.AddHandler(Fatal, StartEvent, startFunc)
+	pr.AddHandler(Stopped, StartEvent, func() {
+		pr.retryLeft = pr.StartRetries
+		pr.startCommand()
+	})
+	pr.AddHandler(Fatal, StartEvent, pr.startCommand)
 
 	pr.AddHandler(Running, StopEvent, func() {
 		pr.cmd.Terminate(syscall.SIGKILL)

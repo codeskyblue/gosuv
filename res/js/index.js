@@ -56,6 +56,25 @@ var vm = new Vue({
             }
             return this.breadcrumb;
         },
+        refresh: function() {
+            console.log("RR");
+            $.ajax({
+                url: "/api/programs",
+                success: function(data) {
+                    vm.programs = data;
+                }
+            });
+        },
+        cmdStart: function(name) {
+            console.log(name);
+            $.ajax({
+                url: "/api/programs/" + name + "/start",
+                method: 'post',
+                success: function(data) {
+                    console.log(data);
+                }
+            })
+        },
     }
 })
 
@@ -72,18 +91,12 @@ Vue.filter('formatBytes', function(value) {
     else return (bytes / 1073741824).toFixed(1) + " GB";
 })
 
-var refreshPrograms = function() {
-    $.ajax({
-        url: "/api/programs",
-        success: function(data) {
-            console.log(data)
-            vm.programs = data;
-        }
-    });
-}
+Vue.directive('disable', function(value) {
+    this.el.disabled = !!value
+})
 
 $(function() {
-    refreshPrograms();
+    vm.refresh();
 
     $("#formNewProgram").submit(function(e) {
         var url = "/api/programs",
