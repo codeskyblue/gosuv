@@ -154,9 +154,18 @@ func (s *Supervisor) saveDB() error {
 	return ioutil.WriteFile(s.programPath(), data, 0644)
 }
 
+func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interface{}) {
+	baseName := filepath.Base(name)
+	t := template.Must(template.New("t").ParseFiles(name))
+	t.ExecuteTemplate(w, baseName, data)
+}
+
 func (s *Supervisor) hIndex(w http.ResponseWriter, r *http.Request) {
-	t := template.Must(template.New("t").ParseFiles("./res/index.html"))
-	t.ExecuteTemplate(w, "index.html", nil)
+	s.renderHTML(w, "./res/index.html", nil)
+}
+
+func (s *Supervisor) hSetting(w http.ResponseWriter, r *http.Request) {
+	s.renderHTML(w, "./res/setting.html", nil)
 }
 
 func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
@@ -317,6 +326,7 @@ func init() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.hIndex)
+	r.HandleFunc("/settings/{name}", suv.hSetting)
 	r.HandleFunc("/api/programs", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
