@@ -26,7 +26,7 @@ type Supervisor struct {
 	pgs       []*Program
 	pgMap     map[string]*Program
 	procMap   map[string]*Process
-	eventCs   []chan string // channels
+	eventCs   map[chan string]bool
 	mu        sync.Mutex
 }
 
@@ -38,7 +38,7 @@ func (s *Supervisor) newProcess(pg Program) *Process {
 	p := NewProcess(pg)
 	origFunc := p.StateChange
 	p.StateChange = func(oldState, newState FSMState) {
-		s.broadcastEvent(string(newState))
+		s.broadcastEvent(fmt.Sprintf("%s state: %s -> %s", p.Name, string(oldState), string(newState)))
 		origFunc(oldState, newState)
 	}
 	return p
@@ -47,20 +47,24 @@ func (s *Supervisor) newProcess(pg Program) *Process {
 func (s *Supervisor) broadcastEvent(event string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	validEventCs := make([]chan string, 0, len(s.eventCs))
-	for _, c := range s.eventCs {
+	for c := range s.eventCs {
 		select {
 		case c <- event:
-			validEventCs = append(validEventCs, c)
 		case <-time.After(500 * time.Millisecond):
 			log.Println("Chan closed, remove from queue")
+			delete(s.eventCs, c)
 		}
 	}
-	s.eventCs = validEventCs
+}
+
+func (s *Supervisor) addStatusChangeListener(c chan string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.eventCs[c] = true
 }
 
 func (s *Supervisor) addOrUpdateProgram(pg Program) error {
-	defer s.broadcastEvent("add or update")
+	defer s.broadcastEvent(pg.Name + " add or update")
 
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
@@ -156,7 +160,7 @@ func (s *Supervisor) saveDB() error {
 
 func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interface{}) {
 	baseName := filepath.Base(name)
-	t := template.Must(template.New("t").ParseFiles(name))
+	t := template.Must(template.New("t").ParseFiles(name)).Delims("[[", "]]")
 	t.ExecuteTemplate(w, baseName, data)
 }
 
@@ -192,7 +196,7 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 		Name:         r.FormValue("name"),
 		Command:      r.FormValue("command"),
 		Dir:          r.FormValue("dir"),
-		AutoStart:    r.FormValue("autostart") == "on",
+		StartAuto:    r.FormValue("autostart") == "on",
 		StartRetries: retries,
 		// TODO: missing other values
 	}
@@ -275,7 +279,9 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 	defer c.Close()
 
 	ch := make(chan string, 0)
-	s.eventCs = append(s.eventCs, ch)
+	s.addStatusChangeListener(ch)
+	// s.eventCs[ch] = true
+	// s.eventCs = append(s.eventCs, ch)
 	go func() {
 		for message := range ch {
 			// Question: type 1 ?
@@ -312,12 +318,14 @@ func (s *Supervisor) catchExitSignal() {
 	}()
 }
 
+var defaultConfigDir = filepath.Join(UserHomeDir(), ".gosuv")
+
 func init() {
 	suv := &Supervisor{
-		ConfigDir: filepath.Join(UserHomeDir(), ".gosuv"),
+		ConfigDir: defaultConfigDir,
 		pgMap:     make(map[string]*Program, 0),
 		procMap:   make(map[string]*Process, 0),
-		eventCs:   make([]chan string, 0),
+		eventCs:   make(map[chan string]bool),
 	}
 	if err := suv.loadDB(); err != nil {
 		log.Fatal(err)

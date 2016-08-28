@@ -99,9 +99,9 @@ type Program struct {
 	Command      string   `yaml:"command" json:"command"`
 	Environ      []string `yaml:"environ" json:"environ"`
 	Dir          string   `yaml:"directory" json:"directory"`
-	AutoStart    bool     `yaml:"autostart" json:"autostart"` // change to *bool, which support unexpected
-	StartRetries int      `yaml:"startretries" json:"startretries"`
-	StartSeconds int      `yaml:"startsecs" json:"startsecs"`
+	StartAuto    bool     `yaml:"start_auto" json:"startAuto"` // change to *bool, which support unexpected
+	StartRetries int      `yaml:"start_retries" json:"startRetries"`
+	StartSeconds int      `yaml:"start_seconds" json:"startSeconds"`
 	// LogDir       string   `yaml:"logdir"`
 }
 

@@ -15,18 +15,20 @@ function getQueryString(name) {
 var ws;
 var wsProtocol = location.protocol == "https:" ? "wss" : "ws";
 
+var testPrograms = [{
+    program: {
+        name: "gggg",
+        command: "",
+        dir: "",
+        autoStart: true,
+    },
+    status: "running",
+}];
+
 var vm = new Vue({
     el: "#app",
     data: {
-        programs: [{
-            program: {
-                name: "gggg",
-                command: "",
-                dir: "",
-                autoStart: true,
-            },
-            status: "running",
-        }],
+        programs: [],
     },
     methods: {
         addNewProgram: function() {
