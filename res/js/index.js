@@ -198,8 +198,16 @@ $(function() {
             vm.log.follow = false;
         }
     })
+    $('#modalTailf').on('hidden.bs.modal', function() {
+        // do something…
+        console.log("Hiddeen")
+        if (W.wsLog) {
+            console.log("close wsLog")
+            W.wsLog.close()
+        }
+    })
 
-    var ws = newWebsocket("/ws/logs/hee", {
+    W.wsLog = newWebsocket("/ws/logs/hee", {
         onopen: function(evt) {
             vm.log.content = "";
         },
@@ -208,7 +216,9 @@ $(function() {
             vm.log.line_count = $.trim(vm.log.content).split(/\r\n|\r|\n/).length;
             if (vm.log.follow) {
                 var pre = $(".realtime-log")[0];
-                pre.scrollTop = pre.scrollHeight;
+                setTimeout(function() {
+                    pre.scrollTop = pre.scrollHeight - pre.clientHeight;
+                }, 1);
             }
         }
     })
