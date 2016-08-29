@@ -75,8 +75,8 @@
               <button class="btn btn-default btn-xs" v-on:click="cmdStop(p.program.name)" :disabled="!canStop(p.status)">
                 <span class="glyphicon glyphicon-stop"></span> Stop
               </button>
-              <button class="btn btn-default btn-xs" disabled="true">
-                <span class="glyphicon glyphicon-minus"></span> Tailf
+              <button class="btn btn-default btn-xs" v-on:click="cmdTail(p.program.name)">
+                <span class="glyphicon glyphicon-text-size"></span> Tailf
               </button>
               <button class="btn btn-default btn-xs" disabled="true">
                 <span class="glyphicon glyphicon-cog"></span> Setting

@@ -12,6 +12,25 @@ function getQueryString(name) {
     return null;
 }
 
+function newWebsocket(pathname, opts) {
+    var ws = new WebSocket(wsProtocol + "://" + location.host + pathname);
+    opts = opts || {};
+    ws.onopen = opts.onopen || function(evt) {
+        console.log("WS OPEN", pathname);
+    }
+    ws.onclose = opts.onclose || function(evt) {
+        console.log("CLOSE");
+        ws = null;
+    }
+    ws.onmessage = opts.onmessage || function(evt) {
+        console.log("response:" + evt.data);
+    }
+    ws.onerror = function(evt) {
+        console.error("error:", evt.data);
+    }
+    return ws;
+}
+
 var wsProtocol = location.protocol == "https:" ? "wss" : "ws";
 var W = {};
 
@@ -78,7 +97,7 @@ var vm = new Vue({
             });
         },
         test: function() {
-            ws.send("Test");
+            console.log("test");
         },
         cmdStart: function(name) {
             console.log(name);
@@ -99,13 +118,40 @@ var vm = new Vue({
                 }
             })
         },
+        cmdTail: function(name) {
+            var that = this;
+            if (W.wsLog) {
+                W.wsLog.close()
+            }
+            W.wsLog = newWebsocket("/ws/logs/" + name, {
+                onopen: function(evt) {
+                    that.log.content = "";
+                },
+                onmessage: function(evt) {
+                    that.log.content += evt.data;
+                    that.log.line_count = $.trim(that.log.content).split(/\r\n|\r|\n/).length;
+                    if (that.log.follow) {
+                        var pre = $(".realtime-log")[0];
+                        setTimeout(function() {
+                            pre.scrollTop = pre.scrollHeight - pre.clientHeight;
+                        }, 1);
+                    }
+                }
+            });
+            $("#modalTailf").modal({
+                show: true,
+                keyboard: true,
+                // keyboard: false,
+                // backdrop: 'static',
+            })
+        },
         canStop: function(status) {
             switch (status) {
                 case "running":
                 case "retry wait":
                     return true;
             }
-        }
+        },
     }
 })
 
@@ -151,25 +197,6 @@ $(function() {
     });
 
 
-    function newWebsocket(pathname, opts) {
-        var ws = new WebSocket(wsProtocol + "://" + location.host + pathname);
-        opts = opts || {};
-        ws.onopen = opts.onopen || function(evt) {
-            console.log("WS OPEN", pathname);
-        }
-        ws.onclose = opts.onclose || function(evt) {
-            console.log("CLOSE");
-            ws = null;
-        }
-        ws.onmessage = opts.onmessage || function(evt) {
-            console.log("response:" + evt.data);
-        }
-        ws.onerror = function(evt) {
-            console.error("error:", evt.data);
-        }
-        return ws;
-    }
-
     console.log("HEE")
 
     function newEventWatcher() {
@@ -207,20 +234,22 @@ $(function() {
         }
     })
 
-    W.wsLog = newWebsocket("/ws/logs/hee", {
-        onopen: function(evt) {
-            vm.log.content = "";
-        },
-        onmessage: function(evt) {
-            vm.log.content += evt.data;
-            vm.log.line_count = $.trim(vm.log.content).split(/\r\n|\r|\n/).length;
-            if (vm.log.follow) {
-                var pre = $(".realtime-log")[0];
-                setTimeout(function() {
-                    pre.scrollTop = pre.scrollHeight - pre.clientHeight;
-                }, 1);
+    function newLogTail(name) {
+        W.wsLog = newWebsocket("/ws/logs/" + name, {
+            onopen: function(evt) {
+                vm.log.content = "";
+            },
+            onmessage: function(evt) {
+                vm.log.content += evt.data;
+                vm.log.line_count = $.trim(vm.log.content).split(/\r\n|\r|\n/).length;
+                if (vm.log.follow) {
+                    var pre = $(".realtime-log")[0];
+                    setTimeout(function() {
+                        pre.scrollTop = pre.scrollHeight - pre.clientHeight;
+                    }, 1);
+                }
             }
-        }
-    })
+        })
+    }
 
 });

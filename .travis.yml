@@ -1,5 +1,5 @@
 language: go
 go:
-  - 1.5
-script:
-  - go get -v .
+  - 1.6
+  - 1.7
+script: go test -v
