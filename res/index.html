@@ -40,6 +40,11 @@
   </nav>
   <div class="container">
     <div class="col-md-12">
+      <div class="alert alert-danger" role="alert" v-if="!isConnectionAlive">
+        <strong>Connection lost</strong> try to reconnect after 3s, or <a href="/" class="alert-link">connect immediately</a>
+      </div>
+    </div>
+    <div class="col-md-12">
       <button class="btn btn-default btn-sm" id="launchNewProgram">
         <span class="glyphicon glyphicon-plus"></span> New Program
       </button>
@@ -144,6 +149,32 @@
       <!-- /.modal-dialog -->
     </div>
     <!-- /.modal -->
+    <div class="modal" id="modalTailf">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <form id="formNewProgram" action="/api/programs" method="post">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title">Tail</h4>
+            </div>
+            <div class="modal-body">
+              <p>Line: {{log.line_count}}</p>
+              <pre v-html="log.content" class="realtime-log"></pre>
+              <div class="checkbox text-right">
+                <label>
+                  <input v-model="log.follow" type="checkbox"> Follow
+                </label>
+              </div>
+            </div>
+            <!--             <div class="modal-footer">
+            </div> -->
+          </form>
+        </div>
+        <!-- /.modal-content -->
+      </div>
+      <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
   </div>
   <script src="/res/js/jquery-3.1.0.min.js"></script>
   <script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>
@@ -160,11 +191,11 @@
         backdrop: 'static',
       })
     });
-    // $("#newProgram").modal({
-    //   show: true,
-    //   // keyboard: false,
-    //   backdrop: 'static',
-    // })
+    $("#modalTailf").modal({
+      show: true,
+      // keyboard: false,
+      backdrop: 'static',
+    })
   });
   </script>
 </body>

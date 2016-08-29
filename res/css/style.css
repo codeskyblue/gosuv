@@ -17,3 +17,7 @@ body {
 .navbar ul.navbar-nav>li>a {
     color: white;
 }
+
+.realtime-log {
+    height: 50em;
+}

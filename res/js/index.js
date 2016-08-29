@@ -12,8 +12,8 @@ function getQueryString(name) {
     return null;
 }
 
-var ws;
 var wsProtocol = location.protocol == "https:" ? "wss" : "ws";
+var W = {};
 
 var testPrograms = [{
     program: {
@@ -28,6 +28,12 @@ var testPrograms = [{
 var vm = new Vue({
     el: "#app",
     data: {
+        isConnectionAlive: true,
+        log: {
+            content: '',
+            follow: true,
+            line_count: 0,
+        },
         programs: [],
     },
     methods: {
@@ -144,23 +150,67 @@ $(function() {
         e.preventDefault()
     });
 
-    console.log("HEE")
-    ws = new WebSocket(wsProtocol + "://" + location.host + "/ws/events");
-    ws.onopen = function(evt) {
-        console.log("OPEN");
-    }
-    ws.onclose = function(evt) {
-        console.log("CLOSE");
-        ws = null;
-    }
-    ws.onmessage = function(evt) {
-        console.log("response:" + evt.data);
-        vm.refresh();
-    }
-    ws.onerror = function(evt) {
-        console.log("error:", evt.data);
+
+    function newWebsocket(pathname, opts) {
+        var ws = new WebSocket(wsProtocol + "://" + location.host + pathname);
+        opts = opts || {};
+        ws.onopen = opts.onopen || function(evt) {
+            console.log("WS OPEN", pathname);
+        }
+        ws.onclose = opts.onclose || function(evt) {
+            console.log("CLOSE");
+            ws = null;
+        }
+        ws.onmessage = opts.onmessage || function(evt) {
+            console.log("response:" + evt.data);
+        }
+        ws.onerror = function(evt) {
+            console.error("error:", evt.data);
+        }
+        return ws;
     }
 
-    // ws.send("Hello")
+    console.log("HEE")
+
+    function newEventWatcher() {
+        W.events = newWebsocket("/ws/events", {
+            onopen: function(evt) {
+                vm.isConnectionAlive = true;
+            },
+            onmessage: function(evt) {
+                console.log("response:" + evt.data);
+                vm.refresh();
+            },
+            onclose: function(evt) {
+                W.events = null;
+                vm.isConnectionAlive = false;
+                console.log("Reconnect after 3s")
+                setTimeout(newEventWatcher, 3000)
+            }
+        });
+    };
+
+    newEventWatcher();
+
+    // cancel follow log if people want to see the original data
+    $(".realtime-log").bind('mousewheel', function(evt) {
+        if (evt.originalEvent.wheelDelta >= 0) {
+            vm.log.follow = false;
+        }
+    })
+
+    var ws = newWebsocket("/ws/logs/hee", {
+        onopen: function(evt) {
+            vm.log.content = "";
+        },
+        onmessage: function(evt) {
+            vm.log.content += evt.data;
+            vm.log.line_count = $.trim(vm.log.content).split(/\r\n|\r|\n/).length;
+            if (vm.log.follow) {
+                var pre = $(".realtime-log")[0];
+                pre.scrollTop = pre.scrollHeight;
+            }
+        }
+    })
 
 });

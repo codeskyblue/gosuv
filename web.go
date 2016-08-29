@@ -160,7 +160,7 @@ func (s *Supervisor) saveDB() error {
 
 func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interface{}) {
 	baseName := filepath.Base(name)
-	t := template.Must(template.New("t").ParseFiles(name)).Delims("[[", "]]")
+	t := template.Must(template.New("t").Delims("[[", "]]").ParseFiles(name))
 	t.ExecuteTemplate(w, baseName, data)
 }
 
@@ -304,6 +304,27 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+	log.Println(name)
+
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+	defer c.Close()
+	n := 0
+	for {
+		n += 1
+		err := c.WriteMessage(1, []byte(strconv.Itoa(n)+" "+time.Now().Format(http.TimeFormat)+"Hello\n"))
+		if err != nil {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 func (s *Supervisor) catchExitSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
@@ -340,6 +361,7 @@ func init() {
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/stop", suv.hStopProgram).Methods("POST")
 	r.HandleFunc("/ws/events", suv.wsEvents)
+	r.HandleFunc("/ws/logs/{name}", suv.wsLog)
 
 	fs := http.FileServer(http.Dir("res"))
 	http.Handle("/", r)
