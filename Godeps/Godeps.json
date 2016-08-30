@@ -8,6 +8,10 @@
 			"Rev": "098ccba5e5e7e676f3631983c5ea931a3592871f"
 		},
 		{
+			"ImportPath": "github.com/glycerine/rbuf",
+			"Rev": "b8b438717ac043d5224cc7f079b866e3b9ea0599"
+		},
+		{
 			"ImportPath": "github.com/go-yaml/yaml",
 			"Rev": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e"
 		},

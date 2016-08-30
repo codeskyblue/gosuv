@@ -1,10 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/glycerine/rbuf"
 )
 
 type BroadcastString struct {
@@ -45,7 +46,7 @@ type BufferBroadcast struct {
 	bs *BroadcastString
 
 	maxSize int
-	buf     *bytes.Buffer
+	buf     *rbuf.FixedSizeRingBuf // *bytes.Buffer
 	mu      sync.Mutex
 }
 
@@ -56,16 +57,16 @@ func NewBufferBroadcast(size int) *BufferBroadcast {
 	return &BufferBroadcast{
 		maxSize: size,
 		bs:      NewBroadcastString(),
-		buf:     bytes.NewBuffer(nil), // buffer.NewRing(buffer.New(size)),
+		buf:     rbuf.NewFixedSizeRingBuf(size), //  bytes.NewBuffer(nil), // buffer.NewRing(buffer.New(size)),
 	}
 }
 
 func (b *BufferBroadcast) Write(data []byte) (n int, err error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.buf.Len() >= b.maxSize*2 {
-		b.buf = bytes.NewBuffer(b.buf.Bytes()[b.buf.Len()-b.maxSize : b.buf.Len()])
-	}
+	// if b.buf.Len() >= b.maxSize*2 {
+	// 	b.buf = bytes.NewBuffer(b.buf.Bytes()[b.buf.Len()-b.maxSize : b.buf.Len()])
+	// }
 	b.bs.WriteMessage(string(data))
 	return b.buf.Write(data)
 }

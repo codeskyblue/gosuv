@@ -207,7 +207,7 @@ func (p *Process) startCommand() {
 }
 
 func NewProcess(pg Program) *Process {
-	outputBufferSize := 4 * 1024 // 4K
+	outputBufferSize := 24 * 1024 // 24K
 	pr := &Process{
 		FSM:       NewFSM(Stopped),
 		Program:   pg,
