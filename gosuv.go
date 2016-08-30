@@ -117,6 +117,11 @@ func actionUpdateSelf(c *cli.Context) error {
 	return equinoxUpdate(c.String("channel"))
 }
 
+func actionVersion(c *cli.Context) error {
+	fmt.Printf("gosuv version %s\n", Version)
+	return nil
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "gosuv"
@@ -167,6 +172,12 @@ func main() {
 				},
 			},
 			Action: actionUpdateSelf,
+		},
+		{
+			Name:    "version",
+			Usage:   "Show version",
+			Aliases: []string{"v"},
+			Action:  actionVersion,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
