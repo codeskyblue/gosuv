@@ -25,11 +25,12 @@ TxI79zIvne9UT/rDsM0BxSydwtjG00MT
 `)
 )
 
-func equinoxUpdate() error {
+func equinoxUpdate(channel string) error {
 	var opts equinox.Options
 	if err := opts.SetPublicKeyPEM(publicKey); err != nil {
 		return err
 	}
+	opts.Channel = channel
 
 	// check for the update
 	resp, err := equinox.Check(appID, opts)
@@ -113,7 +114,7 @@ func actionConfigTest(c *cli.Context) error {
 }
 
 func actionUpdateSelf(c *cli.Context) error {
-	return equinoxUpdate()
+	return equinoxUpdate(c.String("channel"))
 }
 
 func main() {
@@ -156,8 +157,15 @@ func main() {
 			Action:  actionConfigTest,
 		},
 		{
-			Name:   "update-self",
-			Usage:  "Update gosuv itself",
+			Name:  "update-self",
+			Usage: "Update gosuv itself",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "channel, c",
+					Usage: "update channel name, stable or dev",
+					Value: "stable",
+				},
+			},
 			Action: actionUpdateSelf,
 		},
 	}
