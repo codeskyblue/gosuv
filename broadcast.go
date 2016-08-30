@@ -42,6 +42,12 @@ func (b *BroadcastString) AddListener(c chan string) chan string {
 	return c
 }
 
+func (b *BroadcastString) RemoveListener(c chan string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	delete(b.writers, c)
+}
+
 type BufferBroadcast struct {
 	bs *BroadcastString
 

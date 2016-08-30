@@ -64,7 +64,6 @@ func (s *Supervisor) stopAndWait(name string) error {
 		return nil
 	}
 	c := make(chan string, 0)
-	defer func() { close(c) }()
 	s.addStatusChangeListener(c)
 	p.Operate(StopEvent)
 	for {
@@ -335,7 +334,7 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 			// Question: type 1 ?
 			c.WriteMessage(1, []byte(message))
 		}
-		close(ch)
+		s.eventB.RemoveListener(ch)
 	}()
 	for {
 		mt, message, err := c.ReadMessage()
