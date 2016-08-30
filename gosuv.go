@@ -8,12 +8,49 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/equinox-io/equinox"
 	"github.com/urfave/cli"
 )
 
+const appID = "app_8Gji4eEAdDx"
+
 var (
-	Version string = "dev"
+	Version   string = "dev"
+	publicKey        = []byte(`
+-----BEGIN ECDSA PUBLIC KEY-----
+MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEY8xsSkcFs8XXUicw3n7E77qN/vqKUQ/6
+/X5aBiOVF1yTIRYRXrV3aEvJRzErvQxziT9cLxQq+BFUZqn9pISnPSf9dn0wf9kU
+TxI79zIvne9UT/rDsM0BxSydwtjG00MT
+-----END ECDSA PUBLIC KEY-----
+`)
 )
+
+func equinoxUpdate() error {
+	var opts equinox.Options
+	if err := opts.SetPublicKeyPEM(publicKey); err != nil {
+		return err
+	}
+
+	// check for the update
+	resp, err := equinox.Check(appID, opts)
+	switch {
+	case err == equinox.NotAvailableErr:
+		fmt.Println("No update available, already at the latest version!")
+		return nil
+	case err != nil:
+		fmt.Println("Update failed:", err)
+		return err
+	}
+
+	// fetch the update and apply it
+	err = resp.Apply()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Updated to new version: %s!\n", resp.ReleaseVersion)
+	return nil
+}
 
 func actionStartServer(c *cli.Context) error {
 	if err := registerHTTPHandlers(); err != nil {
@@ -75,6 +112,10 @@ func actionConfigTest(c *cli.Context) error {
 	return nil
 }
 
+func actionUpdateSelf(c *cli.Context) error {
+	return equinoxUpdate()
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "gosuv"
@@ -113,6 +154,11 @@ func main() {
 			Aliases: []string{"t"},
 			Usage:   "Test if config file is valid",
 			Action:  actionConfigTest,
+		},
+		{
+			Name:   "update-self",
+			Usage:  "Update gosuv itself",
+			Action: actionUpdateSelf,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {

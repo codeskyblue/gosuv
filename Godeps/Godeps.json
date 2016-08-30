@@ -8,6 +8,30 @@
 			"Rev": "098ccba5e5e7e676f3631983c5ea931a3592871f"
 		},
 		{
+			"ImportPath": "github.com/equinox-io/equinox",
+			"Rev": "6f97d0d3970881d3e53dd6f547a41109eb055e54"
+		},
+		{
+			"ImportPath": "github.com/equinox-io/equinox/internal/go-update",
+			"Rev": "6f97d0d3970881d3e53dd6f547a41109eb055e54"
+		},
+		{
+			"ImportPath": "github.com/equinox-io/equinox/internal/go-update/internal/binarydist",
+			"Rev": "6f97d0d3970881d3e53dd6f547a41109eb055e54"
+		},
+		{
+			"ImportPath": "github.com/equinox-io/equinox/internal/go-update/internal/osext",
+			"Rev": "6f97d0d3970881d3e53dd6f547a41109eb055e54"
+		},
+		{
+			"ImportPath": "github.com/equinox-io/equinox/internal/osext",
+			"Rev": "6f97d0d3970881d3e53dd6f547a41109eb055e54"
+		},
+		{
+			"ImportPath": "github.com/equinox-io/equinox/proto",
+			"Rev": "6f97d0d3970881d3e53dd6f547a41109eb055e54"
+		},
+		{
 			"ImportPath": "github.com/glycerine/rbuf",
 			"Rev": "b8b438717ac043d5224cc7f079b866e3b9ea0599"
 		},

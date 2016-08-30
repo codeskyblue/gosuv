@@ -88,7 +88,6 @@ var vm = new Vue({
         },
         refresh: function() {
             // ws.send("Hello")
-            console.log("RR");
             $.ajax({
                 url: "/api/programs",
                 success: function(data) {
@@ -172,7 +171,7 @@ Vue.filter('formatBytes', function(value) {
 
 Vue.filter('colorStatus', function(value) {
     var makeColorText = function(text, color) {
-        return "<span class='status-icon' style='background-color:" + color + "'>" + "&nbsp;" + "</span> " + text;
+        return "<span class='status' style='background-color:" + color + "'>" + text + "</span>";
     }
     switch (value) {
         case "running":
