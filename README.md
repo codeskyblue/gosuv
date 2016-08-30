@@ -16,8 +16,14 @@ Features
 Go version at least `1.5+`
 
 ## Installation
+Binary can be download from <https://dl.equinox.io/shengxiang/gosuv/stable>
+
+Or if you have go enviroment, you can also build from source.
+
 ```sh
-go get -v github.com/codeskyblue/gosuv
+go get -d github.com/codeskyblue/gosuv
+cd $GOPATH/src/github.com/codeskyblue/gosuv
+go build -tags bindata
 ```
 
 ## Usage
