@@ -170,6 +170,21 @@ Vue.filter('formatBytes', function(value) {
     else return (bytes / 1073741824).toFixed(1) + " GB";
 })
 
+Vue.filter('colorStatus', function(value) {
+    var makeColorText = function(text, color) {
+        return "<span class='status-icon' style='background-color:" + color + "'>" + "&nbsp;" + "</span> " + text;
+    }
+    switch (value) {
+        case "running":
+            return makeColorText("running", "green");
+        case "fatal":
+            return makeColorText("fatal", "red");
+        default:
+            return makeColorText(value, "gray");
+    }
+    return value;
+})
+
 Vue.directive('disable', function(value) {
     this.el.disabled = !!value
 })

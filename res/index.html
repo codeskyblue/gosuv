@@ -67,7 +67,7 @@
         <tbody>
           <tr v-for="p in programs">
             <td v-text="p.program.name"></td>
-            <td v-text="p.status"></td>
+            <td v-html="p.status | colorStatus"></td>
             <td>
               <button v-on:click="cmdStart(p.program.name)" class="btn btn-default btn-xs" :disabled="p.status=='running'">
                 <span class="glyphicon glyphicon-play"></span> Start

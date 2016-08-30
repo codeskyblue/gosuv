@@ -21,3 +21,10 @@ body {
 .realtime-log {
     height: 50em;
 }
+
+.status-icon {
+    border-radius: 1.5em;
+    display: inline-block;
+    width: 1.5em;
+    font-size: 0.2em;
+}
