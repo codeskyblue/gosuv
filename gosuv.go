@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 
 	"github.com/equinox-io/equinox"
 	"github.com/urfave/cli"
@@ -62,7 +63,12 @@ func actionStartServer(c *cli.Context) error {
 		fmt.Println("added serv: ", addr)
 		log.Fatal(http.ListenAndServe(addr, nil))
 	} else {
-		log.Fatal("Not implement daemon mode")
+		err := exec.Command(os.Args[0], "start-server", "--addr", addr, "-f").Start()
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			log.Println("Server started")
+		}
 	}
 	return nil
 }

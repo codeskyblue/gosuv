@@ -381,12 +381,18 @@ func (s *Supervisor) Close() {
 }
 
 func (s *Supervisor) catchExitSignal() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	sigC := make(chan os.Signal, 1)
+	signal.Notify(sigC, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
-		sig := <-c
-		fmt.Printf("Got signal: %v, stopping all running process\n", sig)
-		s.Close()
+		for sig := range sigC {
+			if sig == syscall.SIGHUP {
+				log.Println("Receive SIGHUP, just ignore")
+				continue
+			}
+			fmt.Printf("Got signal: %v, stopping all running process\n", sig)
+			s.Close()
+			break
+		}
 		os.Exit(0)
 	}()
 }
