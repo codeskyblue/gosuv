@@ -10,7 +10,7 @@ triggers:
   cmd: sh ./build.sh
   shell: true
   delay: 100ms
-  signal: KILL
+  signal: TERM
 watch_paths:
 - .
 watch_depth: 0

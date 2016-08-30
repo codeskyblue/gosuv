@@ -181,7 +181,7 @@ func (p *Process) startCommand() {
 	p.Stdout.Reset()
 	p.Stderr.Reset()
 	p.Output.Reset()
-	log.Println("start cmd:", p.Name, p.Command)
+	log.Printf("start cmd(%s): %s", p.Name, p.Command)
 	p.cmd = p.buildCommand()
 
 	p.SetState(Running)

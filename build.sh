@@ -1,3 +1,3 @@
 #!/bin/bash -
 
-go build && ./gosuv serv
+go build && ./gosuv start-server -f

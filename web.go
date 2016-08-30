@@ -181,12 +181,44 @@ func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interfa
 	t.ExecuteTemplate(w, baseName, data)
 }
 
+type JSONResponse struct {
+	Status int         `json:"status"`
+	Value  interface{} `json:"value"`
+}
+
+func (s *Supervisor) renderJSON(w http.ResponseWriter, data JSONResponse) {
+	w.Header().Set("Content-Type", "application/json")
+	bytes, _ := json.Marshal(data)
+	w.Write(bytes)
+}
+
 func (s *Supervisor) hIndex(w http.ResponseWriter, r *http.Request) {
 	s.renderHTML(w, "./res/index.html", nil)
 }
 
 func (s *Supervisor) hSetting(w http.ResponseWriter, r *http.Request) {
 	s.renderHTML(w, "./res/setting.html", nil)
+}
+
+func (s *Supervisor) hStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	data, _ := json.Marshal(map[string]interface{}{
+		"status": 0,
+		"value":  "server is running",
+	})
+	w.Write(data)
+}
+
+func (s *Supervisor) hShutdown(w http.ResponseWriter, r *http.Request) {
+	s.Close()
+	s.renderJSON(w, JSONResponse{
+		Status: 0,
+		Value:  "gosuv has been shutdown",
+	})
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		os.Exit(0)
+	}()
 }
 
 func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
@@ -342,23 +374,27 @@ func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Supervisor) Close() {
+	for _, proc := range s.procMap {
+		s.stopAndWait(proc.Name)
+	}
+	fmt.Println("Supervisor closed")
+}
+
 func (s *Supervisor) catchExitSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-c
 		fmt.Printf("Got signal: %v, stopping all running process\n", sig)
-		for _, proc := range s.procMap {
-			proc.stopCommand()
-		}
-		fmt.Println("Finished. Exit with code 0")
+		s.Close()
 		os.Exit(0)
 	}()
 }
 
 var defaultConfigDir = filepath.Join(UserHomeDir(), ".gosuv")
 
-func init() {
+func registerHTTPHandlers() error {
 	suv := &Supervisor{
 		ConfigDir: defaultConfigDir,
 		pgMap:     make(map[string]*Program, 0),
@@ -367,13 +403,15 @@ func init() {
 		eventB: NewBroadcastString(),
 	}
 	if err := suv.loadDB(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	suv.catchExitSignal()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.hIndex)
 	r.HandleFunc("/settings/{name}", suv.hSetting)
+	r.HandleFunc("/api/status", suv.hStatus)
+	r.HandleFunc("/api/shutdown", suv.hShutdown)
 	r.HandleFunc("/api/programs", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
@@ -384,4 +422,5 @@ func init() {
 	fs := http.FileServer(http.Dir("res"))
 	http.Handle("/", r)
 	http.Handle("/res/", http.StripPrefix("/res/", fs))
+	return nil
 }
