@@ -5,7 +5,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/codeskyblue/kexec",
-			"Rev": "b7e1983cb3267c8862794eacf39b14386dfa441f"
+			"Rev": "098ccba5e5e7e676f3631983c5ea931a3592871f"
 		},
 		{
 			"ImportPath": "github.com/go-yaml/yaml",

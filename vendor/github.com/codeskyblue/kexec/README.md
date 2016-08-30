@@ -37,3 +37,9 @@ example2: see more [examples](examples)
 		p.Start()
 		p.Terminate(syscall.SIGKILL)
 	}
+
+## PS
+This lib also support you call `Wait()` twice, which is not support by `os/exec`
+
+## LICENSE
+[MIT](LICENSE)

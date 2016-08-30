@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -26,8 +27,9 @@ type Supervisor struct {
 	pgs       []*Program
 	pgMap     map[string]*Program
 	procMap   map[string]*Process
-	eventCs   map[chan string]bool
-	mu        sync.Mutex
+
+	mu     sync.Mutex
+	eventB *BroadcastString
 }
 
 func (s *Supervisor) programPath() string {
@@ -45,27 +47,45 @@ func (s *Supervisor) newProcess(pg Program) *Process {
 }
 
 func (s *Supervisor) broadcastEvent(event string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for c := range s.eventCs {
+	s.eventB.WriteMessage(event)
+}
+
+func (s *Supervisor) addStatusChangeListener(c chan string) {
+	s.eventB.AddListener(c)
+}
+
+// Send Stop signal and wait program stops
+func (s *Supervisor) stopAndWait(name string) error {
+	p, ok := s.procMap[name]
+	if !ok {
+		return errors.New("No such program")
+	}
+	if !p.IsRunning() {
+		return nil
+	}
+	c := make(chan string, 0)
+	defer func() { close(c) }()
+	s.addStatusChangeListener(c)
+	p.Operate(StopEvent)
+	for {
 		select {
-		case c <- event:
-		case <-time.After(500 * time.Millisecond):
-			log.Println("Chan closed, remove from queue")
-			delete(s.eventCs, c)
+		case <-c:
+			if !p.IsRunning() {
+				return nil
+			}
+		case <-time.After(1 * time.Second): // In case some event not catched
+			if !p.IsRunning() {
+				return nil
+			}
 		}
 	}
 }
 
-func (s *Supervisor) addStatusChangeListener(c chan string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.eventCs[c] = true
-}
-
 func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 	defer s.broadcastEvent(pg.Name + " add or update")
-
+	if err := pg.Check(); err != nil {
+		return err
+	}
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
 		if !reflect.DeepEqual(origPg, &pg) {
@@ -73,10 +93,7 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 			origProc := s.procMap[pg.Name]
 			isRunning := origProc.IsRunning()
 			go func() {
-				origProc.Operate(StopEvent)
-
-				// TODO: wait state change
-				time.Sleep(2 * time.Second)
+				s.stopAndWait(origProc.Name)
 
 				newProc := s.newProcess(pg)
 				s.procMap[pg.Name] = newProc
@@ -91,7 +108,7 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 		s.procMap[pg.Name] = s.newProcess(pg)
 		log.Println("Add:", pg.Name)
 	}
-	return s.saveDB()
+	return nil // s.saveDB()
 }
 
 // Check
@@ -222,6 +239,7 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 				"error":  err.Error(),
 			})
 		} else {
+			s.saveDB()
 			data, _ = json.Marshal(map[string]interface{}{
 				"status": 0,
 			})
@@ -280,8 +298,6 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 
 	ch := make(chan string, 0)
 	s.addStatusChangeListener(ch)
-	// s.eventCs[ch] = true
-	// s.eventCs = append(s.eventCs, ch)
 	go func() {
 		for message := range ch {
 			// Question: type 1 ?
@@ -307,6 +323,12 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	log.Println(name)
+	proc, ok := s.procMap[name]
+	if !ok {
+		log.Println("No such process")
+		// TODO: raise error here?
+		return
+	}
 
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -314,15 +336,10 @@ func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
-	n := 0
-	for {
-		n += 1
-		err := c.WriteMessage(1, []byte(strconv.Itoa(n)+" "+time.Now().Format(http.TimeFormat)+"Hello\n"))
-		if err != nil {
-			break
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
+
+	<-proc.Output.AddHookFunc(func(message string) error {
+		return c.WriteMessage(1, []byte(message))
+	})
 }
 
 func (s *Supervisor) catchExitSignal() {
@@ -346,7 +363,8 @@ func init() {
 		ConfigDir: defaultConfigDir,
 		pgMap:     make(map[string]*Program, 0),
 		procMap:   make(map[string]*Process, 0),
-		eventCs:   make(map[chan string]bool),
+		// eventCs:   make(map[chan string]bool),
+		eventB: NewBroadcastString(),
 	}
 	if err := suv.loadDB(); err != nil {
 		log.Fatal(err)

@@ -17,6 +17,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -122,6 +123,9 @@ type Process struct {
 	*FSM      `json:"-"`
 	Program   `json:"program"`
 	cmd       *kexec.KCommand
+	Stdout    *BufferBroadcast
+	Stderr    *BufferBroadcast
+	Output    *BufferBroadcast
 	stopC     chan syscall.Signal
 	retryLeft int
 	Status    string `json:"status"`
@@ -131,6 +135,8 @@ func (p *Process) buildCommand() *kexec.KCommand {
 	cmd := kexec.CommandString(p.Command) // Not tested here, I think it should work
 	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
 	cmd.Dir = p.Dir
+	cmd.Stdout = io.MultiWriter(p.Stdout, p.Output)
+	cmd.Stderr = io.MultiWriter(p.Stderr, p.Output)
 	cmd.Env = append(os.Environ(), p.Environ...)
 	return cmd
 }
@@ -155,9 +161,14 @@ func (p *Process) stopCommand() {
 	if p.cmd == nil {
 		return
 	}
-	p.cmd.Terminate(syscall.SIGKILL)
+	p.cmd.Terminate(syscall.SIGTERM)
+	select {
+	case <-GoFunc(p.cmd.Wait):
+	case <-time.After(3 * time.Second): // TODO: add 3s to config
+		p.cmd.Terminate(syscall.SIGKILL)
+	}
+	p.cmd.Wait() // This is OK, because Signal KILL will definitely work
 	p.cmd = nil
-	time.Sleep(200 * time.Millisecond)
 	p.SetState(Stopped)
 }
 
@@ -167,9 +178,11 @@ func (p *Process) IsRunning() bool {
 
 func (p *Process) startCommand() {
 	p.stopCommand()
+	p.Stdout.Reset()
+	p.Stderr.Reset()
+	p.Output.Reset()
 	log.Println("start cmd:", p.Name, p.Command)
-	p.cmd = kexec.CommandString(p.Command)
-	p.cmd.Stdout = os.Stdout
+	p.cmd = p.buildCommand()
 
 	p.SetState(Running)
 	go func() {
@@ -194,12 +207,16 @@ func (p *Process) startCommand() {
 }
 
 func NewProcess(pg Program) *Process {
+	outputBufferSize := 4 * 1024 // 4K
 	pr := &Process{
 		FSM:       NewFSM(Stopped),
 		Program:   pg,
 		stopC:     make(chan syscall.Signal),
 		retryLeft: pg.StartRetries,
 		Status:    string(Stopped),
+		Output:    NewBufferBroadcast(outputBufferSize),
+		Stdout:    NewBufferBroadcast(outputBufferSize),
+		Stderr:    NewBufferBroadcast(outputBufferSize),
 	}
 	pr.StateChange = func(_, newStatus FSMState) {
 		pr.Status = string(newStatus)

@@ -126,6 +126,7 @@ var vm = new Vue({
             W.wsLog = newWebsocket("/ws/logs/" + name, {
                 onopen: function(evt) {
                     that.log.content = "";
+                    that.log.line_count = 0;
                 },
                 onmessage: function(evt) {
                     that.log.content += evt.data;
@@ -138,6 +139,7 @@ var vm = new Vue({
                     }
                 }
             });
+            this.log.follow = true;
             $("#modalTailf").modal({
                 show: true,
                 keyboard: true,
