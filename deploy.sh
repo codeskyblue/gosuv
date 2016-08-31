@@ -43,4 +43,4 @@ fi
         --platforms="darwin_amd64 linux_amd64" \
         --signing-key="equinox.key" \
         --token="$EQUINOX_API_TOKEN" \
-        -- -tags bindata -ldflags "-X main.Version $TRAVIS_COMMIT"
+        -- -tags bindata -ldflags "-X main.Version=$TRAVIS_COMMIT"
