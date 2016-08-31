@@ -1,7 +1,7 @@
 # gosuv
 [![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
 
-## Program not implement
+## Program should not use in production (current is in beta)
 Process managerment writtern by golang, inspired by python-supervisor
 
 Features
@@ -15,7 +15,7 @@ Features
 Go version at least `1.6+`
 
 ## Installation
-Binary can be download from <https://dl.equinox.io/shengxiang/gosuv/stable>
+Standalone binary can be download from <https://dl.equinox.io/shengxiang/gosuv/stable>
 
 Or if you have go enviroment, you can also build from source.
 
@@ -46,6 +46,10 @@ Show server status
 $ gosuv status
 Server is running
 ```
+
+Open web <http://localhost:8000> to see the manager page.
+
+![gosuv web](docs/gosuv.gif)
 
 ## Configuration
 Default config file stored in directory `$HOME/.gosuv/`
