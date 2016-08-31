@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/equinox-io/equinox"
 	"github.com/urfave/cli"
@@ -24,6 +25,7 @@ MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEY8xsSkcFs8XXUicw3n7E77qN/vqKUQ/6
 TxI79zIvne9UT/rDsM0BxSydwtjG00MT
 -----END ECDSA PUBLIC KEY-----
 `)
+	cfg Configuration
 )
 
 func equinoxUpdate(channel string) error {
@@ -129,10 +131,34 @@ func actionVersion(c *cli.Context) error {
 }
 
 func main() {
+	var defaultConfigPath = filepath.Join(defaultConfigDir, "config.yml")
+
 	app := cli.NewApp()
 	app.Name = "gosuv"
 	app.Version = Version
 	app.Usage = "golang port of python-supervisor"
+	app.Before = func(c *cli.Context) error {
+		var err error
+		cfgPath := c.GlobalString("conf")
+		cfg, err = readConf(cfgPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	}
+	app.Authors = []cli.Author{
+		cli.Author{
+			Name:  "codeskyblue",
+			Email: "codeskyblue@gmail.com",
+		},
+	}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "conf, c",
+			Usage: "config file",
+			Value: defaultConfigPath,
+		},
+	}
 	app.Commands = []cli.Command{
 		{
 			Name:  "start-server",
@@ -146,6 +172,11 @@ func main() {
 					Name:  "address, addr",
 					Usage: "listen address",
 					Value: ":8000",
+				},
+				cli.StringFlag{
+					Name:  "conf, c",
+					Usage: "config file",
+					Value: defaultConfigPath,
 				},
 			},
 			Action: actionStartServer,

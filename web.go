@@ -21,6 +21,15 @@ import (
 	"github.com/qiniu/log"
 )
 
+var defaultConfigDir string
+
+func init() {
+	defaultConfigDir = os.Getenv("GOSUV_HOME_DIR")
+	if defaultConfigDir == "" {
+		defaultConfigDir = filepath.Join(UserHomeDir(), ".gosuv")
+	}
+}
+
 type Supervisor struct {
 	ConfigDir string
 	pgs       []*Program
@@ -161,11 +170,6 @@ func (s *Supervisor) loadDB() error {
 }
 
 func (s *Supervisor) saveDB() error {
-	dir := filepath.Dir(s.programPath())
-	if !IsDir(dir) {
-		os.MkdirAll(dir, 0755)
-	}
-
 	data, err := yaml.Marshal(s.pgs)
 	if err != nil {
 		return err
@@ -174,11 +178,8 @@ func (s *Supervisor) saveDB() error {
 }
 
 func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interface{}) {
+	w.Header().Set("Content-Type", "text/html")
 	executeTemplate(w, name, data)
-	// baseName := filepath.Base(name)
-
-	// t := template.Must(template.New("t").Delims("[[", "]]").ParseFiles(name))
-	// t.ExecuteTemplate(w, baseName, data)
 }
 
 type JSONResponse struct {
@@ -397,8 +398,6 @@ func (s *Supervisor) catchExitSignal() {
 		os.Exit(0)
 	}()
 }
-
-var defaultConfigDir = filepath.Join(UserHomeDir(), ".gosuv")
 
 func registerHTTPHandlers() error {
 	suv := &Supervisor{
