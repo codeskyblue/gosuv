@@ -1,5 +1,11 @@
 language: go
 go:
-  - 1.6
-  - 1.7
+- 1.6
+- 1.7
 script: go test -v
+before_install:
+- openssl aes-256-cbc -K $encrypted_6219389dc5b7_key -iv $encrypted_6219389dc5b7_iv
+  -in equinox.key.enc -out equinox.key -d
+env:
+  global:
+    secure: H5IcPyLA9JBgHZZL8sb/7gFY68284VvOUnsAeZcbgpFupIv8iaGgvql5NVnvwovD/SxFWlZ8z4X2BdQWtgURQ1Tr6oLrsTZWZi4Pr5eKhXyCElgZmSP+z8YuUMYs37/uM/iKH/D7vmJlwpoHGJDFbZ0QC5t/W48gyeC0JuAkY05/mqgGCs0/T+yq7YyCvaogZyJhqY2Xq3y3zlleMxYPMkpLsm48JEPtPGoWV6cbXYZHn1FWYAK9w2yKhw+je6EGiAPxT4W9pTWxAHlmvuByPcN2QS2AvgmTkMeYo8KzwOCWTDBwtWU9mjmKerC5EvSwpvhXq77zstorUUxUBWUiJpZnRg+o86M900WLE6x813niLc4KFUXm6wQP9laLgcDkPkSZ9me/TXDcogGgjFXkw1HFsbq4I41b8YuZmiYCkoHvZI68TfkKqSVZ2jp+j7wBxidFlRZO2BJQC4YsX7SJlFDBgOIcyEPNjiZiCFcIa+USHX9AfUyERoP+FBI9cCtki433fVTXInNDu43+GO8C7Jr+0ULDjPGJSWXXU5/+mApXTsDPwUSZ1RE3VxiO2evxmigajqicH0kJbd70JZNqlTaSBgNbgFTiWU0auKJFsnIdSu8BtJ+Neg8isWJ/j2ItbX4Ci4zSIy9JaN2IY8CuLRGLZbiVe5hKbVVNQMGqxMI=
