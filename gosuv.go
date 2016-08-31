@@ -29,7 +29,7 @@ TxI79zIvne9UT/rDsM0BxSydwtjG00MT
 	cfg Configuration
 )
 
-func equinoxUpdate(channel string) error {
+func equinoxUpdate(channel string, skipConfirm bool) error {
 	var opts equinox.Options
 	if err := opts.SetPublicKeyPEM(publicKey); err != nil {
 		return err
@@ -51,10 +51,12 @@ func equinoxUpdate(channel string) error {
 	fmt.Println("Version:", resp.ReleaseVersion)
 	fmt.Println("Name:", resp.ReleaseTitle)
 	fmt.Println("Details:", resp.ReleaseDescription)
-	fmt.Printf("Would you like to update [y/n]? ")
 
-	if !askForConfirmation() {
-		return nil
+	if !skipConfirm {
+		fmt.Printf("Would you like to update [y/n]? ")
+		if !askForConfirmation() {
+			return nil
+		}
 	}
 	//fmt.Printf("New version available: %s downloading ... \n", resp.ReleaseVersion)
 	// fetch the update and apply it
@@ -140,7 +142,7 @@ func actionConfigTest(c *cli.Context) error {
 }
 
 func actionUpdateSelf(c *cli.Context) error {
-	return equinoxUpdate(c.String("channel"))
+	return equinoxUpdate(c.String("channel"), c.Bool("yes"))
 }
 
 func actionVersion(c *cli.Context) error {
@@ -219,6 +221,10 @@ func main() {
 					Name:  "channel, c",
 					Usage: "update channel name, stable or dev",
 					Value: "stable",
+				},
+				cli.BoolFlag{
+					Name:  "yes, y",
+					Usage: "Do not promote to confirm",
 				},
 			},
 			Action: actionUpdateSelf,
