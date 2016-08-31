@@ -399,7 +399,7 @@ func (s *Supervisor) catchExitSignal() {
 	}()
 }
 
-func registerHTTPHandlers() error {
+func newSupervisorHandler() (hdlr http.Handler, err error) {
 	suv := &Supervisor{
 		ConfigDir: defaultConfigDir,
 		pgMap:     make(map[string]*Program, 0),
@@ -407,8 +407,8 @@ func registerHTTPHandlers() error {
 		// eventCs:   make(map[chan string]bool),
 		eventB: NewBroadcastString(),
 	}
-	if err := suv.loadDB(); err != nil {
-		return err
+	if err = suv.loadDB(); err != nil {
+		return
 	}
 	suv.catchExitSignal()
 
@@ -424,8 +424,5 @@ func registerHTTPHandlers() error {
 	r.HandleFunc("/ws/events", suv.wsEvents)
 	r.HandleFunc("/ws/logs/{name}", suv.wsLog)
 
-	// fs := http.FileServer(http.Dir("res"))
-	http.Handle("/", r)
-	// http.Handle("/res/", http.StripPrefix("/res/", fs))
-	return nil
+	return r, nil
 }

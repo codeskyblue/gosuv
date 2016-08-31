@@ -8,6 +8,10 @@
 			"Rev": "098ccba5e5e7e676f3631983c5ea931a3592871f"
 		},
 		{
+			"ImportPath": "github.com/elazarl/go-bindata-assetfs",
+			"Rev": "d5cac425555ca5cf00694df246e04f05e6a55150"
+		},
+		{
 			"ImportPath": "github.com/equinox-io/equinox",
 			"Rev": "6f97d0d3970881d3e53dd6f547a41109eb055e54"
 		},
@@ -38,6 +42,10 @@
 		{
 			"ImportPath": "github.com/go-yaml/yaml",
 			"Rev": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e"
+		},
+		{
+			"ImportPath": "github.com/goji/httpauth",
+			"Rev": "2da839ab0f4df05a6db5eb277995589dadbd4fb9"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",

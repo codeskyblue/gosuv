@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/equinox-io/equinox"
+	"github.com/goji/httpauth"
 	"github.com/urfave/cli"
 )
 
@@ -57,10 +58,17 @@ func equinoxUpdate(channel string) error {
 }
 
 func actionStartServer(c *cli.Context) error {
-	if err := registerHTTPHandlers(); err != nil {
-		return err
+	hdlr, err := newSupervisorHandler()
+	if err != nil {
+		log.Fatal(err)
 	}
-	addr := c.String("address")
+	auth := cfg.Server.HttpAuth
+	if auth.Enabled {
+		hdlr = httpauth.SimpleBasicAuth(auth.User, auth.Password)(hdlr)
+	}
+	http.Handle("/", hdlr)
+
+	addr := cfg.Server.Addr
 	if c.Bool("foreground") {
 		fmt.Println("added serv: ", addr)
 		log.Fatal(http.ListenAndServe(addr, nil))
@@ -76,7 +84,7 @@ func actionStartServer(c *cli.Context) error {
 }
 
 func actionStatus(c *cli.Context) error {
-	resp, err := http.Get("http://localhost:8000/api/status")
+	resp, err := http.Get(cfg.Client.ServerURL + "/api/status")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,7 +103,7 @@ func actionStatus(c *cli.Context) error {
 }
 
 func actionShutdown(c *cli.Context) error {
-	resp, err := http.Get("http://localhost:8000/api/shutdown")
+	resp, err := http.Get(cfg.Client.ServerURL + "/api/status")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,7 +122,7 @@ func actionShutdown(c *cli.Context) error {
 }
 
 func actionConfigTest(c *cli.Context) error {
-	if err := registerHTTPHandlers(); err != nil {
+	if _, err := newSupervisorHandler(); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("test is successful")
@@ -167,11 +175,6 @@ func main() {
 				cli.BoolFlag{
 					Name:  "foreground, f",
 					Usage: "start in foreground",
-				},
-				cli.StringFlag{
-					Name:  "address, addr",
-					Usage: "listen address",
-					Value: ":8000",
 				},
 				cli.StringFlag{
 					Name:  "conf, c",
