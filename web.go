@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -177,8 +178,22 @@ func (s *Supervisor) saveDB() error {
 	return ioutil.WriteFile(s.programPath(), data, 0644)
 }
 
+type WebConfig struct {
+	User    string
+	Version string
+}
+
 func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html")
+	wc := WebConfig{}
+	wc.Version = Version
+	user, err := user.Current()
+	if err == nil {
+		wc.User = user.Username
+	}
+	if data == nil {
+		data = wc
+	}
 	executeTemplate(w, name, data)
 }
 

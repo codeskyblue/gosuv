@@ -8,7 +8,15 @@ Features
 
 * [x] Realtime log view
 * [x] Web control page
+	
+	* [x] Add program support
+	* [ ] Edit support
+	* [ ] Delete support
+	* [ ] Path auto complete <https://github.com/twitter/typeahead.js>
+
+* [x] HTTP Basic auth
 * [ ] Github webhook
+* [ ] Single log page, include search support
 * [ ] 中文文档
 
 ## Requirements

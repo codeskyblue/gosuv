@@ -29,3 +29,7 @@ body {
     padding-right: 0.5em;
     color: white;
 }
+
+small.user {
+    color: #cccccc;
+}
