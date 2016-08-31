@@ -2,18 +2,17 @@
 [![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
 
 ## Program not implement
-**Not done yet.**
-
-golang port of python-supervisor
+Process managerment writtern by golang, inspired by python-supervisor
 
 Features
 
-* [ ] Realtime log view
+* [x] Realtime log view
+* [x] Web control page
 * [ ] Github webhook
-* [ ] Web control page
+* [ ] 中文文档
 
 ## Requirements
-Go version at least `1.5+`
+Go version at least `1.6+`
 
 ## Installation
 Binary can be download from <https://dl.equinox.io/shengxiang/gosuv/stable>
@@ -23,29 +22,47 @@ Or if you have go enviroment, you can also build from source.
 ```sh
 go get -d github.com/codeskyblue/gosuv
 cd $GOPATH/src/github.com/codeskyblue/gosuv
+go build
+```
+
+If you want to build a standalone binary, run the following command.
+
+```sh
+go get github.com/elazarl/go-bindata-assetfs/...
+go-bindata-assetfs -tags bindata res/...
 go build -tags bindata
 ```
 
 ## Usage
+Start server in the background
+
+```sh
+gosuv start-server
+```
+
+Show server status
+
 ```sh
 $ gosuv status
-NAME		STATUS
-timetest	running
-$ gosuv help
-...
+Server is running
 ```
 
 ## Configuration
 Default config file stored in directory `$HOME/.gosuv/`
 
 ## Design
-### Get or Update program
+HTTP is follow the RESTFul guide.
+
+Get or Update program
+
 `<GET|PUT> /api/programs/:name`
 
-### Add new program
+Add new program
+
 `POST /api/programs`
 
-### Del program
+Del program
+
 `DELETE /api/programs/:name`
 
 ## State

@@ -67,7 +67,7 @@ func actionStartServer(c *cli.Context) error {
 		if err != nil {
 			log.Fatal(err)
 		} else {
-			log.Println("Server started")
+			log.Printf("Server started, address %s", addr)
 		}
 	}
 	return nil

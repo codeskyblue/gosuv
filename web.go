@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -175,9 +174,11 @@ func (s *Supervisor) saveDB() error {
 }
 
 func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interface{}) {
-	baseName := filepath.Base(name)
-	t := template.Must(template.New("t").Delims("[[", "]]").ParseFiles(name))
-	t.ExecuteTemplate(w, baseName, data)
+	executeTemplate(w, name, data)
+	// baseName := filepath.Base(name)
+
+	// t := template.Must(template.New("t").Delims("[[", "]]").ParseFiles(name))
+	// t.ExecuteTemplate(w, baseName, data)
 }
 
 type JSONResponse struct {
@@ -192,11 +193,11 @@ func (s *Supervisor) renderJSON(w http.ResponseWriter, data JSONResponse) {
 }
 
 func (s *Supervisor) hIndex(w http.ResponseWriter, r *http.Request) {
-	s.renderHTML(w, "./res/index.html", nil)
+	s.renderHTML(w, "index", nil)
 }
 
 func (s *Supervisor) hSetting(w http.ResponseWriter, r *http.Request) {
-	s.renderHTML(w, "./res/setting.html", nil)
+	s.renderHTML(w, "setting", nil)
 }
 
 func (s *Supervisor) hStatus(w http.ResponseWriter, r *http.Request) {
@@ -424,8 +425,8 @@ func registerHTTPHandlers() error {
 	r.HandleFunc("/ws/events", suv.wsEvents)
 	r.HandleFunc("/ws/logs/{name}", suv.wsLog)
 
-	fs := http.FileServer(http.Dir("res"))
+	// fs := http.FileServer(http.Dir("res"))
 	http.Handle("/", r)
-	http.Handle("/res/", http.StripPrefix("/res/", fs))
+	// http.Handle("/res/", http.StripPrefix("/res/", fs))
 	return nil
 }
