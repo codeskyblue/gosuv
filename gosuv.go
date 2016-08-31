@@ -47,6 +47,16 @@ func equinoxUpdate(channel string) error {
 		return err
 	}
 
+	fmt.Println("New version available!")
+	fmt.Println("Version:", resp.ReleaseVersion)
+	fmt.Println("Name:", resp.ReleaseTitle)
+	fmt.Println("Details:", resp.ReleaseDescription)
+	fmt.Printf("Would you like to update [y/n]? ")
+
+	if !askForConfirmation() {
+		return nil
+	}
+	//fmt.Printf("New version available: %s downloading ... \n", resp.ReleaseVersion)
 	// fetch the update and apply it
 	err = resp.Apply()
 	if err != nil {
