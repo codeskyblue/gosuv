@@ -35,10 +35,6 @@ then
 	CHANNEL="dev"
 fi
 
-go get github.com/jteeuwen/go-bindata/...
-go get github.com/elazarl/go-bindata-assetfs/...
-go-bindata-assetfs -tags bindata res/...
-
 # TODO: Replace app_xxx with correct application ID
 ./equinox release \
 	    --channel="$CHANNEL" \
@@ -47,4 +43,4 @@ go-bindata-assetfs -tags bindata res/...
         --platforms="darwin_amd64 linux_amd64" \
         --signing-key="equinox.key" \
         --token="$EQUINOX_API_TOKEN" \
-        -- -ldflags "-X main.Version $TRAVIS_COMMIT"
+        -- -tags bindata -ldflags "-X main.Version $TRAVIS_COMMIT"
