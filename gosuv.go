@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/equinox-io/equinox"
 	"github.com/goji/httpauth"
@@ -85,37 +87,73 @@ func actionStartServer(c *cli.Context) error {
 		fmt.Println("added serv: ", addr)
 		log.Fatal(http.ListenAndServe(addr, nil))
 	} else {
-		err := exec.Command(os.Args[0], "start-server", "-f").Start()
+		if checkServerStatus() == nil {
+			fmt.Println("server is already running")
+			return nil
+		}
+		logPath := filepath.Join(defaultConfigDir, "gosuv.log")
+		logFd, err := os.Create(logPath)
+		if err != nil {
+			log.Fatalf("create file %s failed: %v", logPath, err)
+		}
+		cmd := exec.Command(os.Args[0], "start-server", "-f")
+		cmd.Stdout = logFd
+		cmd.Stderr = logFd
+		err = cmd.Start()
 		if err != nil {
 			log.Fatal(err)
-		} else {
-			log.Printf("Server started, address %s", addr)
+		}
+		select {
+		case err = <-GoFunc(cmd.Wait):
+			log.Fatalf("server started failed, %v", err)
+		case <-time.After(200 * time.Millisecond):
+			showAddr := addr
+			if strings.HasPrefix(addr, ":") {
+				showAddr = "0.0.0.0" + addr
+			}
+			fmt.Printf("server started, listening on %s\n", showAddr)
 		}
 	}
 	return nil
 }
 
-func actionStatus(c *cli.Context) error {
+func checkServerStatus() error {
 	resp, err := http.Get(cfg.Client.ServerURL + "/api/status")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	var ret JSONResponse
 	err = json.Unmarshal(body, &ret)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	fmt.Println(ret.Value)
+	if ret.Status != 0 {
+		return fmt.Errorf("%v", ret.Value)
+	}
+	return nil
+}
+
+func actionStatus(c *cli.Context) error {
+	err := checkServerStatus()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Server is running, OK.")
+	}
 	return nil
 }
 
 func actionShutdown(c *cli.Context) error {
-	resp, err := http.Get(cfg.Client.ServerURL + "/api/status")
+	restart := c.Bool("restart")
+	if restart {
+		log.Fatal("Restart not implemented.")
+	}
+	resp, err := http.Get(cfg.Client.ServerURL + "/api/shutdown")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -203,8 +241,14 @@ func main() {
 			Action:  actionStatus,
 		},
 		{
-			Name:   "shutdown",
-			Usage:  "Shutdown server",
+			Name:  "shutdown",
+			Usage: "Shutdown server",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "restart, r",
+					Usage: "restart server(todo)",
+				},
+			},
 			Action: actionShutdown,
 		},
 		{

@@ -114,7 +114,7 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 		s.pgs = append(s.pgs, &pg)
 		s.pgMap[pg.Name] = &pg
 		s.procMap[pg.Name] = s.newProcess(pg)
-		log.Println("Add:", pg.Name)
+		// log.Println("Add:", pg.Name)
 	}
 	return nil // s.saveDB()
 }
@@ -229,7 +229,7 @@ func (s *Supervisor) hShutdown(w http.ResponseWriter, r *http.Request) {
 	s.Close()
 	s.renderJSON(w, JSONResponse{
 		Status: 0,
-		Value:  "gosuv has been shutdown",
+		Value:  "gosuv server has been shutdown",
 	})
 	go func() {
 		time.Sleep(500 * time.Millisecond)
