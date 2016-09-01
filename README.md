@@ -9,10 +9,12 @@ Features
 * [x] Realtime log view
 * [x] Web control page
 	
+	* [x] Start, Stop, Tail
 	* [x] Add program support
 	* [ ] Edit support
 	* [ ] Delete support
 	* [ ] Path auto complete <https://github.com/twitter/typeahead.js>
+	* [ ] Memory and CPU monitor
 
 * [x] HTTP Basic auth
 * [ ] Github webhook

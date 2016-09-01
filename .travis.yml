@@ -5,18 +5,26 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_6219389dc5b7_key -iv $encrypted_6219389dc5b7_iv
   -in equinox.key.enc -out equinox.key -d
 before_script:
-  - go get -v github.com/jteeuwen/go-bindata/...
-  - go get -v github.com/elazarl/go-bindata-assetfs/...
-  - go-bindata-assetfs -tags bindata res/...
+- go get -v github.com/jteeuwen/go-bindata/...
+- go get -v github.com/elazarl/go-bindata-assetfs/...
+- go-bindata-assetfs -tags bindata res/...
 script:
-  - go test -v
-  - go test -v -tags bindata
+- go test -v
+- go test -v -tags bindata
+after_script:
+- echo script finish
 env:
   global:
     secure: H5IcPyLA9JBgHZZL8sb/7gFY68284VvOUnsAeZcbgpFupIv8iaGgvql5NVnvwovD/SxFWlZ8z4X2BdQWtgURQ1Tr6oLrsTZWZi4Pr5eKhXyCElgZmSP+z8YuUMYs37/uM/iKH/D7vmJlwpoHGJDFbZ0QC5t/W48gyeC0JuAkY05/mqgGCs0/T+yq7YyCvaogZyJhqY2Xq3y3zlleMxYPMkpLsm48JEPtPGoWV6cbXYZHn1FWYAK9w2yKhw+je6EGiAPxT4W9pTWxAHlmvuByPcN2QS2AvgmTkMeYo8KzwOCWTDBwtWU9mjmKerC5EvSwpvhXq77zstorUUxUBWUiJpZnRg+o86M900WLE6x813niLc4KFUXm6wQP9laLgcDkPkSZ9me/TXDcogGgjFXkw1HFsbq4I41b8YuZmiYCkoHvZI68TfkKqSVZ2jp+j7wBxidFlRZO2BJQC4YsX7SJlFDBgOIcyEPNjiZiCFcIa+USHX9AfUyERoP+FBI9cCtki433fVTXInNDu43+GO8C7Jr+0ULDjPGJSWXXU5/+mApXTsDPwUSZ1RE3VxiO2evxmigajqicH0kJbd70JZNqlTaSBgNbgFTiWU0auKJFsnIdSu8BtJ+Neg8isWJ/j2ItbX4Ci4zSIy9JaN2IY8CuLRGLZbiVe5hKbVVNQMGqxMI=
 deploy:
+  provider: releases
   skip_cleanup: true
-  provider: script
-  script: ./deploy.sh
+  api_key:
+    secure: h9pZk2oimqKF/KAeMoxP9VRx3uDBDiBmpuPrm38PZ0W1TfamaS2Zz0OLaWdUJMVklpue6vTq9Y0I2VuO2HSPOkfdcqtctdxwQuQ+COp16wGKCIJTzFIuZh5zbTCNp7cbf08GNfI+MqzY/YNcys4dTRZlPEFfQcJOPBJZFzdA1GvzIsKAmpZN2sU0uTMxAfSBACBm55HS8LoCZcBPjICsD3mWqM7/Obg3mls3NpQ2LPyGFFUmBqyw0zDXRbm17zctHZ9TC4TuCEqqLvxcq7Wl9aijX8TORea/bJfW6xpoxjDYAebMHE51X0OfCh069g9gfFk/dRWgZaX8oUkPtJhaROkdIrLsst+kwixRmvZMuWNsWLW1ocDj0c49WdRMeWPUPEu5UiGbeL59e+gWgi8miXp3YefAXZ5QiTj5Zqxi6AQZ3kT8/JpP5+WIf6qp5l8Ks5zqJwbsdt7ZbvoaW5g7sDsF+TUfQpFkVXZrf5mDdahMxs3npBl5BC8NGFXW5QLm5O8S7Jw6vADZNVbR6DiYW5I+jBwwyMPPa/oymFBtQcb/zLYR55LOVCa5QlgzZoH62NZYtwjNExAm11cgBR2EHXWqAf1Ygzua0fgb8BZLJbNcOJ2eYupRpOpGUkSHaXLizL/F+oDn1hGLrFeIvNVG7olifPlKgAZTMS8ZS+lftxw=
+  file:
+    - dist/gosuv-linux-amd64.tar.gz
+    - dist/gosuv-linux-386.tar.gz
+    - dist/gosuv-darwin-amd64.tar.gz
   on:
-    branch: master
+    repo: codeskyblue/gosuv
+    tags: true
