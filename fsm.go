@@ -167,7 +167,13 @@ func (p *Process) stopCommand() {
 	case <-time.After(3 * time.Second): // TODO: add 3s to config
 		p.cmd.Terminate(syscall.SIGKILL)
 	}
-	p.cmd.Wait() // This is OK, because Signal KILL will definitely work
+	err := p.cmd.Wait() // This is OK, because Signal KILL will definitely work
+	prefixStr := "\n--- GOSUV LOG " + time.Now().Format("2006-01-02 15:04:05")
+	if err == nil {
+		io.WriteString(p.Output, fmt.Sprintf("%s exit success ---\n", prefixStr))
+	} else {
+		io.WriteString(p.Output, fmt.Sprintf("%s exit %v ---\n", prefixStr, err))
+	}
 	p.cmd = nil
 	p.SetState(Stopped)
 }
@@ -180,7 +186,7 @@ func (p *Process) startCommand() {
 	p.stopCommand()
 	p.Stdout.Reset()
 	p.Stderr.Reset()
-	p.Output.Reset()
+	// p.Output.Reset() // Donot reset because log is still needed.
 	log.Printf("start cmd(%s): %s", p.Name, p.Command)
 	p.cmd = p.buildCommand()
 
