@@ -35,6 +35,20 @@ func GoTimeoutFunc(timeout time.Duration, f func() error) chan error {
 	return ch
 }
 
+func GoTimeout(f func() error, timeout time.Duration) (err error) {
+	done := make(chan bool)
+	go func() {
+		err = f()
+		done <- true
+	}()
+	select {
+	case <-time.After(timeout):
+		return ErrGoTimeout
+	case <-done:
+		return
+	}
+}
+
 func IsDir(dir string) bool {
 	fi, err := os.Stat(dir)
 	return err == nil && fi.IsDir()
