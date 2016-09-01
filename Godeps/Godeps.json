@@ -56,6 +56,10 @@
 			"Rev": "b6ab76f1fe9803ee1d59e7e5b2a797c1fe897ce5"
 		},
 		{
+			"ImportPath": "github.com/kennygrant/sanitize",
+			"Rev": "bf9c39a678d8e26aeee60d5fe733cad47a7a6871"
+		},
+		{
 			"ImportPath": "github.com/qiniu/log",
 			"Comment": "v1.0.00-2-ge002bc2",
 			"Rev": "e002bc2020b19bfa61ed378cc5407383dbd2f346"
@@ -64,6 +68,14 @@
 			"ImportPath": "github.com/urfave/cli",
 			"Comment": "v1.18.0-47-g168c954",
 			"Rev": "168c95418e66e019fe17b8f4f5c45aa62ff80e23"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "075e191f18186a8ff2becaf64478e30f4545cdad"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html/atom",
+			"Rev": "075e191f18186a8ff2becaf64478e30f4545cdad"
 		}
 	]
 }
