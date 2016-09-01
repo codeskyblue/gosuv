@@ -123,15 +123,16 @@ func (p *Program) Check() error {
 }
 
 type Process struct {
-	*FSM      `json:"-"`
-	Program   `json:"program"`
-	cmd       *kexec.KCommand
-	Stdout    *BufferBroadcast
-	Stderr    *BufferBroadcast
-	Output    *BufferBroadcast
-	stopC     chan syscall.Signal
-	retryLeft int
-	Status    string `json:"status"`
+	*FSM       `json:"-"`
+	Program    `json:"program"`
+	cmd        *kexec.KCommand
+	Stdout     *BufferBroadcast
+	Stderr     *BufferBroadcast
+	Output     *BufferBroadcast
+	OutputFile *os.File
+	stopC      chan syscall.Signal
+	retryLeft  int
+	Status     string `json:"status"`
 }
 
 func (p *Process) buildCommand() *kexec.KCommand {
@@ -143,10 +144,13 @@ func (p *Process) buildCommand() *kexec.KCommand {
 		os.MkdirAll(logDir, 0755)
 	}
 	var fout io.Writer
-	fout, err := os.OpenFile(filepath.Join(logDir, "output.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	var err error
+	p.OutputFile, err = os.OpenFile(filepath.Join(logDir, "output.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		log.Warn("create stdout log failed:", err)
 		fout = ioutil.Discard
+	} else {
+		fout = p.OutputFile
 	}
 	cmd.Stdout = io.MultiWriter(p.Stdout, p.Output, fout)
 	cmd.Stderr = io.MultiWriter(p.Stderr, p.Output, fout)
@@ -186,6 +190,10 @@ func (p *Process) stopCommand() {
 		io.WriteString(p.cmd.Stderr, fmt.Sprintf("%s exit success ---\n\n", prefixStr))
 	} else {
 		io.WriteString(p.cmd.Stderr, fmt.Sprintf("%s exit %v ---\n\n", prefixStr, err))
+	}
+	if p.OutputFile != nil {
+		p.OutputFile.Close()
+		p.OutputFile = nil
 	}
 	p.cmd = nil
 	p.SetState(Stopped)
