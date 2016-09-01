@@ -95,6 +95,19 @@ var vm = new Vue({
                 }
             });
         },
+        reload: function() {
+            $.ajax({
+                url: "/api/reload",
+                method: "POST",
+                success: function(data) {
+                    if (data.status == 0) {
+                        alert("reload success");
+                    } else {
+                        alert(data.value);
+                    }
+                }
+            });
+        },
         test: function() {
             console.log("test");
         },

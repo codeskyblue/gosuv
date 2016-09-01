@@ -9,7 +9,7 @@ Features
 * [x] Realtime log view
 * [x] Web control page
 	
-	* [x] Start, Stop, Tail
+	* [x] Start, Stop, Tail, Reload
 	* [x] Add program support
 	* [ ] Edit support
 	* [ ] Delete support

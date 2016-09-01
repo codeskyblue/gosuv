@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/equinox-io/equinox"
 	"github.com/goji/httpauth"
+	"github.com/qiniu/log"
 	"github.com/urfave/cli"
 )
 
@@ -84,7 +84,7 @@ func actionStartServer(c *cli.Context) error {
 
 	addr := cfg.Server.Addr
 	if c.Bool("foreground") {
-		fmt.Println("added serv: ", addr)
+		log.Printf("server listen on %v", addr)
 		log.Fatal(http.ListenAndServe(addr, nil))
 	} else {
 		if checkServerStatus() == nil {
@@ -92,7 +92,7 @@ func actionStartServer(c *cli.Context) error {
 			return nil
 		}
 		logPath := filepath.Join(defaultConfigDir, "gosuv.log")
-		logFd, err := os.Create(logPath)
+		logFd, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			log.Fatalf("create file %s failed: %v", logPath, err)
 		}
@@ -153,7 +153,26 @@ func actionShutdown(c *cli.Context) error {
 	if restart {
 		log.Fatal("Restart not implemented.")
 	}
-	resp, err := http.Get(cfg.Client.ServerURL + "/api/shutdown")
+	resp, err := http.Post(cfg.Client.ServerURL+"/api/shutdown", "application/x-www-form-urlencoded", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var ret JSONResponse
+	err = json.Unmarshal(body, &ret)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(ret.Value)
+	return nil
+}
+
+func actionReload(c *cli.Context) error {
+	resp, err := http.Post(cfg.Client.ServerURL+"/api/reload", "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -239,6 +258,11 @@ func main() {
 			Aliases: []string{"st"},
 			Usage:   "Show program status",
 			Action:  actionStatus,
+		},
+		{
+			Name:   "reload",
+			Usage:  "Reload config file",
+			Action: actionReload,
 		},
 		{
 			Name:  "shutdown",

@@ -105,6 +105,7 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 
 				newProc := s.newProcess(pg)
 				s.procMap[pg.Name] = newProc
+				*s.pgMap[pg.Name] = pg // update origin
 				if isRunning {
 					newProc.Operate(StartEvent)
 				}
@@ -114,9 +115,8 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 		s.pgs = append(s.pgs, &pg)
 		s.pgMap[pg.Name] = &pg
 		s.procMap[pg.Name] = s.newProcess(pg)
-		// log.Println("Add:", pg.Name)
 	}
-	return nil // s.saveDB()
+	return nil
 }
 
 // Check
@@ -142,6 +142,8 @@ func (s *Supervisor) readConfigFromDB() (pgs []Program, err error) {
 }
 
 func (s *Supervisor) loadDB() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	pgs, err := s.readConfigFromDB()
 	if err != nil {
 		return err
@@ -158,19 +160,17 @@ func (s *Supervisor) loadDB() error {
 			continue
 		}
 		name := pg.Name
-		s.procMap[name].Operate(StopEvent)
+		log.Printf("stop before delete program: %s", name)
+		s.stopAndWait(name)
 		delete(s.procMap, name)
 		delete(s.pgMap, name)
-	}
-	// update programs (because of delete)
-	s.pgs = make([]*Program, 0, len(s.pgMap))
-	for _, pg := range s.pgMap {
-		s.pgs = append(s.pgs, pg)
 	}
 	return nil
 }
 
 func (s *Supervisor) saveDB() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	data, err := yaml.Marshal(s.pgs)
 	if err != nil {
 		return err
@@ -235,6 +235,22 @@ func (s *Supervisor) hShutdown(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond)
 		os.Exit(0)
 	}()
+}
+
+func (s *Supervisor) hReload(w http.ResponseWriter, r *http.Request) {
+	err := s.loadDB()
+	log.Println("reload config file")
+	if err == nil {
+		s.renderJSON(w, JSONResponse{
+			Status: 0,
+			Value:  "load config success",
+		})
+	} else {
+		s.renderJSON(w, JSONResponse{
+			Status: 1,
+			Value:  err.Error(),
+		})
+	}
 }
 
 func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
@@ -394,7 +410,7 @@ func (s *Supervisor) Close() {
 	for _, proc := range s.procMap {
 		s.stopAndWait(proc.Name)
 	}
-	fmt.Println("Supervisor closed")
+	log.Println("server closed")
 }
 
 func (s *Supervisor) catchExitSignal() {
@@ -406,7 +422,7 @@ func (s *Supervisor) catchExitSignal() {
 				log.Println("Receive SIGHUP, just ignore")
 				continue
 			}
-			fmt.Printf("Got signal: %v, stopping all running process\n", sig)
+			log.Printf("Got signal: %v, stopping all running process\n", sig)
 			s.Close()
 			break
 		}
@@ -430,12 +446,16 @@ func newSupervisorHandler() (hdlr http.Handler, err error) {
 	r := mux.NewRouter()
 	r.HandleFunc("/", suv.hIndex)
 	r.HandleFunc("/settings/{name}", suv.hSetting)
+
 	r.HandleFunc("/api/status", suv.hStatus)
-	r.HandleFunc("/api/shutdown", suv.hShutdown)
+	r.HandleFunc("/api/shutdown", suv.hShutdown).Methods("POST")
+	r.HandleFunc("/api/reload", suv.hReload).Methods("POST")
+
 	r.HandleFunc("/api/programs", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/stop", suv.hStopProgram).Methods("POST")
+
 	r.HandleFunc("/ws/events", suv.wsEvents)
 	r.HandleFunc("/ws/logs/{name}", suv.wsLog)
 
