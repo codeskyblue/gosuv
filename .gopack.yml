@@ -5,4 +5,4 @@ includes: []
 excludes:
   - \.git
 script:
-  - go build
+  - go build -tags bindata
