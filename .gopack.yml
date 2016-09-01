@@ -1,6 +1,6 @@
 author: codeskyblue
 description: Port of python supervisor
-os: darwin linux windows
+os: darwin linux
 includes: []
 excludes:
   - \.git
