@@ -3,11 +3,13 @@ package main
 import (
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestBroadcast(t *testing.T) {
 	bs := NewBroadcastString()
 	bs.WriteMessage("hello")
+	time.Sleep(10 * time.Millisecond)
 	c1 := bs.AddListener(nil)
 	go func() {
 		bs.WriteMessage("world")

@@ -53,7 +53,7 @@ func (b *BroadcastString) AddListener(c chan string) chan string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if c == nil {
-		c = make(chan string, 0)
+		c = make(chan string, 4)
 	}
 	b.writers[c] = true
 	return c
