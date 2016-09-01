@@ -128,7 +128,8 @@ var vm = new Vue({
                     that.log.line_count = 0;
                 },
                 onmessage: function(evt) {
-                    that.log.content += evt.data;
+                    // strip ansi color
+                    that.log.content += evt.data.replace(/\033\[[0-9;]*m/g, "");
                     that.log.line_count = $.trim(that.log.content).split(/\r\n|\r|\n/).length;
                     if (that.log.follow) {
                         var pre = $(".realtime-log")[0];
@@ -245,27 +246,8 @@ $(function() {
         // do something…
         console.log("Hiddeen")
         if (W.wsLog) {
-            console.log("close wsLog")
+            console.log("wsLog closed")
             W.wsLog.close()
         }
     })
-
-    function newLogTail(name) {
-        W.wsLog = newWebsocket("/ws/logs/" + name, {
-            onopen: function(evt) {
-                vm.log.content = "";
-            },
-            onmessage: function(evt) {
-                vm.log.content += evt.data;
-                vm.log.line_count = $.trim(vm.log.content).split(/\r\n|\r|\n/).length;
-                if (vm.log.follow) {
-                    var pre = $(".realtime-log")[0];
-                    setTimeout(function() {
-                        pre.scrollTop = pre.scrollHeight - pre.clientHeight;
-                    }, 1);
-                }
-            }
-        })
-    }
-
 });
