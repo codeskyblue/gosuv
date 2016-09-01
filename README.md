@@ -84,6 +84,8 @@ client:
   server_url: http://localhost:11313
 ```
 
+Logs can be found in `$HOME/.gosuv/log/`
+
 ## Design
 HTTP is follow the RESTFul guide.
 

@@ -18,13 +18,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/codeskyblue/kexec"
+	"github.com/kennygrant/sanitize"
+	"github.com/qiniu/log"
 )
 
 type FSMState string
@@ -135,8 +138,18 @@ func (p *Process) buildCommand() *kexec.KCommand {
 	cmd := kexec.CommandString(p.Command) // Not tested here, I think it should work
 	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
 	cmd.Dir = p.Dir
-	cmd.Stdout = io.MultiWriter(p.Stdout, p.Output)
-	cmd.Stderr = io.MultiWriter(p.Stderr, p.Output)
+	logDir := filepath.Join(defaultConfigDir, "log", sanitize.Name(p.Name))
+	if !IsDir(logDir) {
+		os.MkdirAll(logDir, 0755)
+	}
+	var fout io.Writer
+	fout, err := os.OpenFile(filepath.Join(logDir, "output.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Warn("create stdout log failed:", err)
+		fout = ioutil.Discard
+	}
+	cmd.Stdout = io.MultiWriter(p.Stdout, p.Output, fout)
+	cmd.Stderr = io.MultiWriter(p.Stderr, p.Output, fout)
 	cmd.Env = append(os.Environ(), p.Environ...)
 	return cmd
 }
@@ -170,9 +183,9 @@ func (p *Process) stopCommand() {
 	err := p.cmd.Wait() // This is OK, because Signal KILL will definitely work
 	prefixStr := "\n--- GOSUV LOG " + time.Now().Format("2006-01-02 15:04:05")
 	if err == nil {
-		io.WriteString(p.Output, fmt.Sprintf("%s exit success ---\n", prefixStr))
+		io.WriteString(p.cmd.Stderr, fmt.Sprintf("%s exit success ---\n\n", prefixStr))
 	} else {
-		io.WriteString(p.Output, fmt.Sprintf("%s exit %v ---\n", prefixStr, err))
+		io.WriteString(p.cmd.Stderr, fmt.Sprintf("%s exit %v ---\n\n", prefixStr, err))
 	}
 	p.cmd = nil
 	p.SetState(Stopped)
