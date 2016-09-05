@@ -25,9 +25,7 @@ Features
 Go version at least `1.6+`
 
 ## Installation
-Standalone binary can be download from https://dl.equinox.io/shengxiang/gosuv/stable
-
-Standalone binary can be download from [github releases](https://github.com/codeskyblue/gosuv/releases/latest)
+Standalone binary can be download from [Stable1](https://dl.equinox.io/shengxiang/gosuv/stable) [Stable github](https://github.com/codeskyblue/gosuv/releases/latest) [Develop](https://dl.equinox.io/shengxiang/gosuv/dev)
 
 Or if you have go enviroment, you can also build from source.
 
