@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -155,15 +156,16 @@ func NewWriteBroadcaster(size int) *WriteBroadcaster {
 	return bc
 }
 
-func (w *WriteBroadcaster) AddWriter(writer io.WriteCloser, stream string) {
+func (w *WriteBroadcaster) AddWriter(writer io.WriteCloser, stream string) []byte {
 	w.Lock()
 	defer w.Unlock()
 	if w.closed {
 		writer.Close()
-		return
+		return nil
 	}
 	sw := StreamWriter{wc: writer, stream: stream}
 	w.writers[sw] = true
+	return w.buf.Bytes()
 }
 
 func (wb *WriteBroadcaster) Closed() bool {
@@ -172,8 +174,11 @@ func (wb *WriteBroadcaster) Closed() bool {
 
 func (wb *WriteBroadcaster) NewReader(name string) ([]byte, *io.PipeReader) {
 	r, w := io.Pipe()
-	wb.AddWriter(w, name)
-	return wb.buf.Bytes(), r
+	return wb.AddWriter(w, name), r
+}
+
+func (wb *WriteBroadcaster) AddWriterFunc(name string, fn func([]byte) error) []byte {
+	return wb.AddWriter(&funcWriter{fn}, name)
 }
 
 func (wb *WriteBroadcaster) Bytes() []byte {
@@ -227,4 +232,59 @@ func (w *nopWriteCloser) Close() error { return nil }
 
 func NopWriteCloser(w io.Writer) io.WriteCloser {
 	return &nopWriteCloser{w}
+}
+
+// func writer
+type funcWriter struct {
+	wrFn func([]byte) error
+}
+
+func (f *funcWriter) Write(data []byte) (n int, err error) {
+	err = f.wrFn(data)
+	return len(data), err
+}
+
+func (f *funcWriter) Close() error { return nil }
+
+// quick loss writer
+type QuickLossBroadcastWriter struct {
+	*WriteBroadcaster
+	bufC   chan []byte
+	closed bool
+}
+
+func (w *QuickLossBroadcastWriter) Write(buf []byte) (int, error) {
+	select {
+	case w.bufC <- buf:
+	default:
+	}
+	return len(buf), nil
+}
+
+func (w *QuickLossBroadcastWriter) Close() error {
+	if !w.closed {
+		w.closed = true
+		close(w.bufC)
+		w.WriteBroadcaster.CloseWriters()
+	}
+	return nil
+}
+
+func (w *QuickLossBroadcastWriter) drain() {
+	for data := range w.bufC {
+		w.WriteBroadcaster.Write(data)
+	}
+}
+
+func NewQuickLossBroadcastWriter(size int) *QuickLossBroadcastWriter {
+	qlw := &QuickLossBroadcastWriter{
+		WriteBroadcaster: NewWriteBroadcaster(size),
+		bufC:             make(chan []byte, 20),
+	}
+	go qlw.drain()
+	qlw.AddWriterFunc("stdout", func(data []byte) error {
+		_, err := os.Stdout.Write(data)
+		return err
+	})
+	return qlw
 }

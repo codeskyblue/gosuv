@@ -126,9 +126,9 @@ type Process struct {
 	*FSM       `json:"-"`
 	Program    `json:"program"`
 	cmd        *kexec.KCommand
-	Stdout     *BufferBroadcast
-	Stderr     *BufferBroadcast
-	Output     *BufferBroadcast
+	Stdout     *QuickLossBroadcastWriter // *WriteBroadcaster //   io.WriteCloser // *BufferBroadcast
+	Stderr     *QuickLossBroadcastWriter // *BufferBroadcast
+	Output     *QuickLossBroadcastWriter // *BufferBroadcast
 	OutputFile *os.File
 	stopC      chan syscall.Signal
 	retryLeft  int
@@ -205,8 +205,8 @@ func (p *Process) IsRunning() bool {
 
 func (p *Process) startCommand() {
 	p.stopCommand()
-	p.Stdout.Reset()
-	p.Stderr.Reset()
+	// p.Stdout.Reset()
+	// p.Stderr.Reset()
 	// p.Output.Reset() // Donot reset because log is still needed.
 	log.Printf("start cmd(%s): %s", p.Name, p.Command)
 	p.cmd = p.buildCommand()
@@ -241,9 +241,9 @@ func NewProcess(pg Program) *Process {
 		stopC:     make(chan syscall.Signal),
 		retryLeft: pg.StartRetries,
 		Status:    string(Stopped),
-		Output:    NewBufferBroadcast(outputBufferSize),
-		Stdout:    NewBufferBroadcast(outputBufferSize),
-		Stderr:    NewBufferBroadcast(outputBufferSize),
+		Output:    NewQuickLossBroadcastWriter(outputBufferSize), // NewBufferBroadcast(outputBufferSize),
+		Stdout:    NewQuickLossBroadcastWriter(outputBufferSize), //   NewBufferBroadcast(outputBufferSize),
+		Stderr:    NewQuickLossBroadcastWriter(outputBufferSize), // NewBufferBroadcast(outputBufferSize),
 	}
 	pr.StateChange = func(_, newStatus FSMState) {
 		pr.Status = string(newStatus)

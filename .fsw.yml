@@ -7,7 +7,7 @@ triggers:
   - '**/*.py'
   env:
     DEBUG: "1"
-  cmd: sh ./run.sh
+  cmd: sh ./build.sh
   shell: true
   delay: 100ms
   signal: TERM

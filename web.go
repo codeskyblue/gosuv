@@ -401,9 +401,17 @@ func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
-	<-proc.Output.AddHookFunc(func(message string) error {
-		return c.WriteMessage(1, []byte(message))
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	origData := proc.Output.AddWriterFunc(r.RemoteAddr, func(data []byte) error {
+		er := c.WriteMessage(1, data)
+		if er != nil {
+			wg.Done()
+		}
+		return er
 	})
+	c.WriteMessage(1, origData)
+	wg.Wait()
 }
 
 func (s *Supervisor) Close() {
