@@ -25,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/codeskyblue/gosuv/pushover"
 	"github.com/codeskyblue/kexec"
 	"github.com/kennygrant/sanitize"
 	"github.com/qiniu/log"
@@ -99,14 +100,19 @@ var (
 )
 
 type Program struct {
-	Name         string   `yaml:"name" json:"name"`
-	Command      string   `yaml:"command" json:"command"`
-	Environ      []string `yaml:"environ" json:"environ"`
-	Dir          string   `yaml:"directory" json:"directory"`
-	StartAuto    bool     `yaml:"start_auto" json:"startAuto"` // change to *bool, which support unexpected
-	StartRetries int      `yaml:"start_retries" json:"startRetries"`
-	StartSeconds int      `yaml:"start_seconds" json:"startSeconds"`
-	// LogDir       string   `yaml:"logdir"`
+	Name          string   `yaml:"name" json:"name"`
+	Command       string   `yaml:"command" json:"command"`
+	Environ       []string `yaml:"environ" json:"environ"`
+	Dir           string   `yaml:"directory" json:"directory"`
+	StartAuto     bool     `yaml:"start_auto" json:"startAuto"`
+	StartRetries  int      `yaml:"start_retries" json:"startRetries"`
+	StartSeconds  int      `yaml:"start_seconds" json:"startSeconds"`
+	Notifications struct {
+		Pushover struct {
+			ApiKey string   `yaml:"api_key"`
+			Users  []string `yaml:"users"`
+		} `yaml:"pushover,omitempty"`
+	} `yaml:"notifications,omitempty" json:"-"`
 }
 
 func (p *Program) Check() error {
@@ -120,6 +126,21 @@ func (p *Program) Check() error {
 		return fmt.Errorf("Program dir(%s) not exists", p.Dir)
 	}
 	return nil
+}
+
+func (p *Program) RunNotification() {
+	po := p.Notifications.Pushover
+	if po.ApiKey != "" && len(po.Users) > 0 {
+		log.Println("TODO: trigger pushover notification")
+		for _, user := range po.Users {
+			pushover.Notify(pushover.Params{
+				Token:   po.ApiKey,
+				User:    user,
+				Title:   p.Name,
+				Message: "todo",
+			})
+		}
+	}
 }
 
 type Process struct {
@@ -247,6 +268,11 @@ func NewProcess(pg Program) *Process {
 	}
 	pr.StateChange = func(_, newStatus FSMState) {
 		pr.Status = string(newStatus)
+
+		// TODO: status need to filter with config, not hard coded.
+		if newStatus == Fatal {
+			go pr.Program.RunNotification()
+		}
 	}
 	if pr.StartSeconds <= 0 {
 		pr.StartSeconds = 3
