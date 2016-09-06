@@ -126,9 +126,9 @@ type Process struct {
 	*FSM       `json:"-"`
 	Program    `json:"program"`
 	cmd        *kexec.KCommand
-	Stdout     *QuickLossBroadcastWriter // *WriteBroadcaster //   io.WriteCloser // *BufferBroadcast
-	Stderr     *QuickLossBroadcastWriter // *BufferBroadcast
-	Output     *QuickLossBroadcastWriter // *BufferBroadcast
+	Stdout     *QuickLossBroadcastWriter
+	Stderr     *QuickLossBroadcastWriter
+	Output     *QuickLossBroadcastWriter
 	OutputFile *os.File
 	stopC      chan syscall.Signal
 	retryLeft  int
@@ -216,7 +216,7 @@ func (p *Process) startCommand() {
 		errC := GoFunc(p.cmd.Run)
 		startTime := time.Now()
 		select {
-		case err := <-errC: //<-GoTimeoutFunc(time.Duration(p.StartSeconds)*time.Second, p.cmd.Run):
+		case err := <-errC:
 			log.Println(err, time.Since(startTime))
 			if time.Since(startTime) < time.Duration(p.StartSeconds)*time.Second {
 				if p.retryLeft == p.StartRetries { // If first time quit so fast, just set to fatal

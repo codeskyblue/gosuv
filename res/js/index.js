@@ -142,6 +142,7 @@ var vm = new Vue({
                 },
                 onmessage: function(evt) {
                     // strip ansi color
+                    // console.log("DT:", evt.data)
                     that.log.content += evt.data.replace(/\033\[[0-9;]*m/g, "");
                     that.log.line_count = $.trim(that.log.content).split(/\r\n|\r|\n/).length;
                     if (that.log.follow) {

@@ -38,7 +38,8 @@ type Supervisor struct {
 	procMap   map[string]*Process
 
 	mu     sync.Mutex
-	eventB *BroadcastString
+	eventB *WriteBroadcaster
+	// eventB *BroadcastString
 }
 
 func (s *Supervisor) programPath() string {
@@ -56,11 +57,16 @@ func (s *Supervisor) newProcess(pg Program) *Process {
 }
 
 func (s *Supervisor) broadcastEvent(event string) {
-	s.eventB.WriteMessage(event)
+	s.eventB.Write([]byte(event))
 }
 
 func (s *Supervisor) addStatusChangeListener(c chan string) {
-	s.eventB.AddListener(c)
+	sChan := s.eventB.NewChanString(fmt.Sprintf("%d", time.Now().UnixNano()))
+	go func() {
+		for msg := range sChan {
+			c <- msg
+		}
+	}()
 }
 
 // Send Stop signal and wait program stops
@@ -367,7 +373,7 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 			// Question: type 1 ?
 			c.WriteMessage(1, []byte(message))
 		}
-		s.eventB.RemoveListener(ch)
+		// s.eventB.RemoveListener(ch)
 	}()
 	for {
 		mt, message, err := c.ReadMessage()
@@ -401,17 +407,13 @@ func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	origData := proc.Output.AddWriterFunc(r.RemoteAddr, func(data []byte) error {
-		er := c.WriteMessage(1, data)
-		if er != nil {
-			wg.Done()
+	for data := range proc.Output.NewChanString(r.RemoteAddr) {
+		err := c.WriteMessage(1, []byte(data))
+		if err != nil {
+			proc.Output.CloseWriter(r.RemoteAddr)
+			break
 		}
-		return er
-	})
-	c.WriteMessage(1, origData)
-	wg.Wait()
+	}
 }
 
 func (s *Supervisor) Close() {
@@ -443,8 +445,7 @@ func newSupervisorHandler() (hdlr http.Handler, err error) {
 		ConfigDir: defaultConfigDir,
 		pgMap:     make(map[string]*Program, 0),
 		procMap:   make(map[string]*Process, 0),
-		// eventCs:   make(map[chan string]bool),
-		eventB: NewBroadcastString(),
+		eventB:    NewWriteBroadcaster(4 * 1024),
 	}
 	if err = suv.loadDB(); err != nil {
 		return
