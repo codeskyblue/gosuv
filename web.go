@@ -33,13 +33,28 @@ func init() {
 
 type Supervisor struct {
 	ConfigDir string
-	pgs       []*Program
-	pgMap     map[string]*Program
-	procMap   map[string]*Process
 
-	mu     sync.Mutex
-	eventB *WriteBroadcaster
-	// eventB *BroadcastString
+	names   []string
+	pgMap   map[string]Program
+	procMap map[string]*Process
+	mu      sync.Mutex
+	eventB  *WriteBroadcaster
+}
+
+func (s *Supervisor) programs() []Program {
+	pgs := make([]Program, 0, len(s.names))
+	for _, name := range s.names {
+		pgs = append(pgs, s.pgMap[name])
+	}
+	return pgs
+}
+
+func (s *Supervisor) procs() []*Process {
+	ps := make([]*Process, 0, len(s.names))
+	for _, name := range s.names {
+		ps = append(ps, s.procMap[name])
+	}
+	return ps
 }
 
 func (s *Supervisor) programPath() string {
@@ -102,7 +117,7 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 	}
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
-		if reflect.DeepEqual(origPg, &pg) {
+		if reflect.DeepEqual(origPg, pg) {
 			return nil
 		}
 		s.broadcastEvent(pg.Name + " update")
@@ -114,14 +129,15 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 
 			newProc := s.newProcess(pg)
 			s.procMap[pg.Name] = newProc
-			*s.pgMap[pg.Name] = pg // update origin
+			s.pgMap[pg.Name] = pg // update origin
 			if isRunning {
 				newProc.Operate(StartEvent)
 			}
 		}()
 	} else {
-		s.pgs = append(s.pgs, &pg)
-		s.pgMap[pg.Name] = &pg
+		// s.pgs = append(s.pgs, &pg)
+		s.names = append(s.names, pg.Name)
+		s.pgMap[pg.Name] = pg
 		s.procMap[pg.Name] = s.newProcess(pg)
 		s.broadcastEvent(pg.Name + " added")
 	}
@@ -159,12 +175,15 @@ func (s *Supervisor) loadDB() error {
 	}
 	// add or update program
 	visited := map[string]bool{}
+	names := make([]string, 0, len(pgs))
 	for _, pg := range pgs {
+		names = append(names, pg.Name)
 		visited[pg.Name] = true
 		s.addOrUpdateProgram(pg)
 	}
+	s.names = names
 	// delete not exists program
-	for _, pg := range s.pgs {
+	for _, pg := range s.pgMap {
 		if visited[pg.Name] {
 			continue
 		}
@@ -173,6 +192,7 @@ func (s *Supervisor) loadDB() error {
 		s.stopAndWait(name)
 		delete(s.procMap, name)
 		delete(s.pgMap, name)
+		s.broadcastEvent(pg.Name + " deleted")
 	}
 	return nil
 }
@@ -180,7 +200,7 @@ func (s *Supervisor) loadDB() error {
 func (s *Supervisor) saveDB() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	data, err := yaml.Marshal(s.pgs)
+	data, err := yaml.Marshal(s.programs())
 	if err != nil {
 		return err
 	}
@@ -263,11 +283,7 @@ func (s *Supervisor) hReload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
-	procs := make([]*Process, 0, len(s.pgs))
-	for _, pg := range s.pgs {
-		procs = append(procs, s.procMap[pg.Name])
-	}
-	data, err := json.Marshal(procs)
+	data, err := json.Marshal(s.procs())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -446,7 +462,7 @@ func (s *Supervisor) catchExitSignal() {
 func newSupervisorHandler() (hdlr http.Handler, err error) {
 	suv := &Supervisor{
 		ConfigDir: defaultConfigDir,
-		pgMap:     make(map[string]*Program, 0),
+		pgMap:     make(map[string]Program, 0),
 		procMap:   make(map[string]*Process, 0),
 		eventB:    NewWriteBroadcaster(4 * 1024),
 	}
