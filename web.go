@@ -242,7 +242,10 @@ func (s *Supervisor) hIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Supervisor) hSetting(w http.ResponseWriter, r *http.Request) {
-	s.renderHTML(w, "setting", nil)
+	name := mux.Vars(r)["name"]
+	s.renderHTML(w, "setting", map[string]string{
+		"Name": name,
+	})
 }
 
 func (s *Supervisor) hStatus(w http.ResponseWriter, r *http.Request) {
