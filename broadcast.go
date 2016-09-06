@@ -124,9 +124,12 @@ func NopWriteCloser(w io.Writer) io.WriteCloser {
 type chanStrWriter struct {
 	C      chan string
 	closed bool
+	mu     sync.Mutex
 }
 
 func (c *chanStrWriter) Write(data []byte) (n int, err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if c.closed {
 		return 0, errors.New("chan writer closed")
 	}
@@ -135,6 +138,8 @@ func (c *chanStrWriter) Write(data []byte) (n int, err error) {
 }
 
 func (c *chanStrWriter) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if !c.closed {
 		c.closed = true
 		close(c.C)
