@@ -1,8 +1,8 @@
 # gosuv
 [![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
 
-## Program should not use in production (current is in beta)
-Process managerment writtern by golang, inspired by python-supervisor
+## Should not use in production now (current is in alpha)
+Process management writtern by golang, inspired by python-supervisor
 
 Features
 
@@ -25,13 +25,13 @@ Features
 Go version at least `1.6+`
 
 ## Installation
-Standalone binary can be download from
+Standalone binary can be download from one of the following addresses
 
-| Name   | Branch | Address |
+| Branch | Source | Address |
 |--------|--------|---------|
-| equinox| stable | <https://dl.equinox.io/shengxiang/gosuv/stable> |
-| github-release | stable | <https://github.com/codeskyblue/gosuv/releases/latest>|
-| equinox| develop | <https://dl.equinox.io/shengxiang/gosuv/dev> |
+| stable | equinox| <https://dl.equinox.io/shengxiang/gosuv/stable> |
+| stable | github | stable | <https://github.com/codeskyblue/gosuv/releases/latest>|
+| dev    | equinox| <https://dl.equinox.io/shengxiang/gosuv/dev> |
 
 Or if you have go enviroment, you can also build from source.
 
