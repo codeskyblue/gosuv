@@ -81,9 +81,9 @@
               <button class="btn btn-default btn-xs" v-on:click="cmdTail(p.program.name)">
                 <span class="glyphicon glyphicon-text-size"></span> Tail
               </button>
-              <button class="btn btn-default btn-xs" disabled="true">
+              <a href="/settings/{{p.program.name}}" class="btn btn-default btn-xs">
                 <span class="glyphicon glyphicon-cog"></span> Setting
-              </button>
+              </a>
             </td>
           </tr>
           <!-- <tr class="success">
@@ -127,11 +127,11 @@
             <div class="modal-body">
               <div class="form-group">
                 <label>Name</label>
-                <input type="text" name="name" v-model="program.name" class="form-control" value="h" placeholder="name (must be unique)" required>
+                <input type="text" name="name" v-model="program.name" class="form-control" placeholder="name (must be unique)" required>
               </div>
               <div class="form-group">
                 <label>Command</label>
-                <input type="text" name="command" value="echo redis-server --port 7788" class="form-control" placeholder="shell command, ex: redis-server --port 6379">
+                <input type="text" name="command" class="form-control" placeholder="shell command, ex: redis-server --port 6379">
               </div>
               <div class="form-group">
                 <label>Directory</label>

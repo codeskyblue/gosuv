@@ -96,31 +96,34 @@ func (s *Supervisor) stopAndWait(name string) error {
 }
 
 func (s *Supervisor) addOrUpdateProgram(pg Program) error {
-	defer s.broadcastEvent(pg.Name + " add or update")
+	// defer s.broadcastEvent(pg.Name + " add or update")
 	if err := pg.Check(); err != nil {
 		return err
 	}
 	origPg, ok := s.pgMap[pg.Name]
 	if ok {
-		if !reflect.DeepEqual(origPg, &pg) {
-			log.Println("Update:", pg.Name)
-			origProc := s.procMap[pg.Name]
-			isRunning := origProc.IsRunning()
-			go func() {
-				s.stopAndWait(origProc.Name)
-
-				newProc := s.newProcess(pg)
-				s.procMap[pg.Name] = newProc
-				*s.pgMap[pg.Name] = pg // update origin
-				if isRunning {
-					newProc.Operate(StartEvent)
-				}
-			}()
+		if reflect.DeepEqual(origPg, &pg) {
+			return nil
 		}
+		s.broadcastEvent(pg.Name + " update")
+		log.Println("Update:", pg.Name)
+		origProc := s.procMap[pg.Name]
+		isRunning := origProc.IsRunning()
+		go func() {
+			s.stopAndWait(origProc.Name)
+
+			newProc := s.newProcess(pg)
+			s.procMap[pg.Name] = newProc
+			*s.pgMap[pg.Name] = pg // update origin
+			if isRunning {
+				newProc.Operate(StartEvent)
+			}
+		}()
 	} else {
 		s.pgs = append(s.pgs, &pg)
 		s.pgMap[pg.Name] = &pg
 		s.procMap[pg.Name] = s.newProcess(pg)
+		s.broadcastEvent(pg.Name + " added")
 	}
 	return nil
 }

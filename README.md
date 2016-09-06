@@ -110,6 +110,22 @@ Only 4 states. [ref](http://supervisord.org/subprocess.html#process-states)
 
 ![states](docs/states.png)
 
+## Notification (todo)
+Configuration example
+
+```yaml
+notifications:
+  on:
+    fatal: true
+  pushover:
+    api_key: [token]
+    users:
+    - [user1]
+    - [user2]
+```
+### Pushover
+<https://pushover.net/api>
+
 # Plugin Design (todo)
 Current plugins:
 
