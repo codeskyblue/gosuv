@@ -4,6 +4,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestBroadcast(t *testing.T) {
@@ -42,4 +44,15 @@ func TestBroadcast(t *testing.T) {
 		wg.Done()
 	}()
 	wg.Wait()
+}
+
+func TestRingBuffer(t *testing.T) {
+	Convey("Write some string to ring buffer", t, func() {
+		// buf := rbuf.NewFixedSizeRingBuf(5)
+		// buf.Write([]byte("abcde"))
+		// So(string(buf.Bytes()), ShouldEqual, "abcde")
+		// buf.Advance(2)
+		// buf.Write([]byte("fg"))
+		// So(string(buf.Bytes()), ShouldEqual, "cdefg")
+	})
 }

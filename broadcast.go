@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/glycerine/rbuf"
+	"github.com/codeskyblue/rbuf"
 	"github.com/qiniu/log"
 )
 
@@ -188,7 +188,10 @@ func (wb *WriteBroadcaster) Bytes() []byte {
 func (w *WriteBroadcaster) Write(p []byte) (n int, err error) {
 	w.Lock()
 	defer w.Unlock()
-	w.buf.Write(p)
+
+	// write with advance
+	w.buf.WriteWithAdvance(p)
+
 	for sw := range w.writers {
 		// set write timeout
 		err = GoTimeout(func() error {
