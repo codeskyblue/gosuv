@@ -64,7 +64,7 @@ func (w *WriteBroadcaster) Write(p []byte) (n int, err error) {
 	defer w.Unlock()
 
 	// write with advance
-	w.buf.WriteWithAdvance(p)
+	w.buf.WriteAndMaybeOverwriteOldestData(p)
 
 	for sw := range w.writers {
 		// set write timeout
