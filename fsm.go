@@ -149,10 +149,10 @@ type Process struct {
 	*FSM       `json:"-"`
 	Program    `json:"program"`
 	cmd        *kexec.KCommand
-	Stdout     *QuickLossBroadcastWriter
-	Stderr     *QuickLossBroadcastWriter
-	Output     *QuickLossBroadcastWriter
-	OutputFile *os.File
+	Stdout     *QuickLossBroadcastWriter `json:"-"`
+	Stderr     *QuickLossBroadcastWriter `json:"-"`
+	Output     *QuickLossBroadcastWriter `json:"-"`
+	OutputFile *os.File                  `json:"-"`
 	stopC      chan syscall.Signal
 	retryLeft  int
 	Status     string `json:"status"`

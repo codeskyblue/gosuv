@@ -20,6 +20,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/qiniu/log"
+	"github.com/shirou/gopsutil/process"
 )
 
 var defaultConfigDir string
@@ -285,7 +286,7 @@ func (s *Supervisor) hReload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
+func (s *Supervisor) hGetProgramList(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(s.procs())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -293,6 +294,23 @@ func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+func (s *Supervisor) hGetProgram(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+	proc, ok := s.procMap[name]
+	if !ok {
+		s.renderJSON(w, JSONResponse{
+			Status: 1,
+			Value:  "program not exists",
+		})
+		return
+	} else {
+		s.renderJSON(w, JSONResponse{
+			Status: 0,
+			Value:  proc,
+		})
+	}
 }
 
 func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
@@ -438,6 +456,47 @@ func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Performance
+func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+	defer c.Close()
+
+	name := mux.Vars(r)["name"]
+	proc, ok := s.procMap[name]
+	if !ok {
+		log.Println("No such process")
+		// TODO: raise error here?
+		return
+	}
+	if proc.cmd == nil || proc.cmd.Process == nil {
+		log.Println("process not running")
+		return
+	}
+	var pid = proc.cmd.Process.Pid
+	ps, err := process.NewProcess(int32(pid))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for {
+		mstat, _ := ps.MemoryInfo()
+		pcpu, _ := ps.Percent(300 * time.Millisecond)
+		err = c.WriteJSON(map[string]interface{}{
+			"pid": pid,
+			"mem": mstat,
+			"cpu": pcpu,
+		})
+		if err != nil {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 func (s *Supervisor) Close() {
 	for _, proc := range s.procMap {
 		s.stopAndWait(proc.Name)
@@ -482,13 +541,15 @@ func newSupervisorHandler() (hdlr http.Handler, err error) {
 	r.HandleFunc("/api/shutdown", suv.hShutdown).Methods("POST")
 	r.HandleFunc("/api/reload", suv.hReload).Methods("POST")
 
-	r.HandleFunc("/api/programs", suv.hGetProgram).Methods("GET")
+	r.HandleFunc("/api/programs", suv.hGetProgramList).Methods("GET")
+	r.HandleFunc("/api/programs/{name}", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/stop", suv.hStopProgram).Methods("POST")
 
 	r.HandleFunc("/ws/events", suv.wsEvents)
 	r.HandleFunc("/ws/logs/{name}", suv.wsLog)
+	r.HandleFunc("/ws/perfs/{name}", suv.wsPerf)
 
 	return r, nil
 }

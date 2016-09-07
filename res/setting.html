@@ -37,7 +37,7 @@
     <div class="col-md-12">
       <h1>{{name}}</h1>
       <p>
-        pid: 11234
+        pid: {{pid}}
         <br> status: running
         <br> time: 2016/09/07 12:00:00
       </p>
@@ -56,6 +56,7 @@
   <!-- <script src="/res/js/underscore-min.js"></script> -->
   <script src="/res/js/vue-1.0.min.js"></script>
   <script src="/res/js/echarts.min.js"></script>
+  <script src="/res/js/common.js"></script>
   <script src="/res/js/settings.js"></script>
   <script type="text/javascript">
   // 基于准备好的dom，初始化echarts实例
@@ -63,16 +64,7 @@
   var chartMem = echarts.init(document.getElementById('chart-mem'));
 
   // 指定图表的配置项和数据
-  var baseTime = new Date().getTime();
-  var i = 0;
-
-  function randomData() {
-    i += 1;
-    return {
-      value: [baseTime + i * 1000, Math.random() * 100]
-    }
-  }
-  var data = [];
+  var cpuData = [];
 
   var option = {
     title: {
@@ -85,12 +77,12 @@
     },
     tooltip: {
       trigger: 'axis',
-      formatter: function(params) {
-        params = params[0];
-        // console.log(params)
-        var date = new Date(params.value[0]);
-        return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
-      },
+      // formatter: function(params) {
+      // params = params[0];
+      // console.log(params)
+      // var date = new Date(params.value[0]);
+      // return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
+      // },
       axisPointer: {
         animation: false
       }
@@ -112,7 +104,7 @@
     series: [{
       name: 'Total',
       type: 'line',
-      data: data,
+      data: cpuData,
       animation: false,
       smooth: true,
       areaStyle: {
@@ -121,24 +113,22 @@
     }]
   }
 
-  for (var i = 0; i < 100; i++) {
-    data.push(randomData());
-  }
-  // 使用刚指定的配置项和数据显示图表。
   chartCpu.setOption(option);
 
-  var timeTicket = setInterval(function() {
-    for (var i = 0; i < 1; i++) {
-      data.shift();
-      data.push(randomData());
-    }
-    chartCpu.setOption({
-      series: [{
-        data: data
-      }]
-    });
-  }, 1000);
 
+  // var timeTicket = setInterval(function() {
+  //   for (var i = 0; i < 1; i++) {
+  //     data.shift();
+  //     data.push(randomData());
+  //   }
+  //   chartCpu.setOption({
+  //     series: [{
+  //       data: data
+  //     }]
+  //   });
+  // }, 1000);
+
+  var memData = [];
   var option = {
     title: {
       text: 'Memory'
@@ -149,14 +139,15 @@
         params = params[0];
         // console.log(params)
         var date = new Date(params.value[0]);
-        return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
+        return formatBytes(params.value[1]);
+        // return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
       },
       axisPointer: {
         animation: false
       }
     },
     legend: {
-      data: ['Total']
+      data: ['RSS']
     },
     xAxis: {
       type: 'time',
@@ -170,9 +161,9 @@
       },
     },
     series: [{
-      name: 'Total',
+      name: 'RSS',
       type: 'line',
-      data: data,
+      data: memData,
       animation: false,
       smooth: true,
       areaStyle: {
