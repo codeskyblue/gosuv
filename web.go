@@ -19,6 +19,7 @@ import (
 	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	gps "github.com/mitchellh/go-ps"
 	"github.com/qiniu/log"
 	"github.com/shirou/gopsutil/process"
 )
@@ -456,6 +457,63 @@ func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getAllSubPids(pid int) (subps []int, err error) {
+	pses, err := gps.Processes()
+	if err != nil {
+		return
+	}
+	pidMap := make(map[int][]gps.Process, 0)
+	for _, p := range pses {
+		pidMap[p.PPid()] = append(pidMap[p.PPid()], p)
+	}
+	var travel func(int)
+	travel = func(pid int) {
+		for _, p := range pidMap[pid] {
+			subps = append(subps, p.Pid())
+			travel(p.Pid())
+		}
+	}
+	travel(pid)
+	return
+}
+
+func getTotalMem(pids []int) *process.MemoryInfoStat {
+	minfo := &process.MemoryInfoStat{}
+	for _, pid := range pids {
+		p, err := process.NewProcess(int32(pid))
+		if err != nil {
+			continue
+		}
+		m, err := p.MemoryInfo()
+		if err != nil {
+			continue
+		}
+		minfo.RSS += m.RSS
+		minfo.Swap += m.Swap
+		minfo.VMS += m.VMS
+	}
+	return minfo
+}
+
+func getTotalCpu(pids []int) float64 {
+	var pcpu float64
+	for _, pid := range pids {
+		p, err := process.NewProcess(int32(pid))
+		if err != nil {
+			continue
+		}
+		// still need to fix here
+		// use gosigar instead
+		n, err := p.Percent(300 * time.Millisecond)
+		log.Println(p.Pid, n, err)
+		if err != nil {
+			continue
+		}
+		pcpu += n
+	}
+	return pcpu
+}
+
 // Performance
 func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -472,28 +530,38 @@ func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 		// TODO: raise error here?
 		return
 	}
-	if proc.cmd == nil || proc.cmd.Process == nil {
-		log.Println("process not running")
-		return
-	}
-	var pid = proc.cmd.Process.Pid
-	ps, err := process.NewProcess(int32(pid))
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	for {
-		mstat, _ := ps.MemoryInfo()
-		pcpu, _ := ps.Percent(300 * time.Millisecond)
+		if proc.cmd == nil || proc.cmd.Process == nil {
+			log.Println("process not running")
+			return
+		}
+		pid := proc.cmd.Process.Pid
+		spids, err := getAllSubPids(pid)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		pids := append(spids, pid)
+
+		log.Println(pids)
+		mstat := getTotalMem(pids)
+		pcpu := getTotalCpu(pids)
+		// for _, spid := range spids {
+		// 	fmt.Println("spid:", spid)
+		// }
+
+		// mstat, _ := ps.MemoryInfo()
+		// pcpu, _ := ps.Percent(300 * time.Millisecond)
 		err = c.WriteJSON(map[string]interface{}{
-			"pid": pid,
-			"mem": mstat,
-			"cpu": pcpu,
+			"pid":      pid,
+			"sub_pids": spids,
+			"mem":      mstat,
+			"cpu":      pcpu,
 		})
 		if err != nil {
 			break
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(700 * time.Millisecond)
 	}
 }
 

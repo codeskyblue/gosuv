@@ -4,6 +4,7 @@ var vm = new Vue({
     data: {
         name: name,
         pid: '-',
+        subPids: [],
     }
 });
 
@@ -14,6 +15,7 @@ var ws = newWebsocket('/ws/perfs/' + name, {
     onmessage: function(evt) {
         var data = JSON.parse(evt.data);
         vm.pid = data.pid;
+        vm.subPids = data.sub_pids;
         console.log("pid", data.pid, data); //evt.data.pid);
         if (memData && data.mem && data.mem.rss) {
             memData.push({

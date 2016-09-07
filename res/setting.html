@@ -38,6 +38,9 @@
       <h1>{{name}}</h1>
       <p>
         pid: {{pid}}
+        <br> sub pids: {{subPids.join(',')}}
+      </p>
+      <p>
         <br> status: running
         <br> time: 2016/09/07 12:00:00
       </p>
@@ -92,6 +95,9 @@
     },
     xAxis: {
       type: 'time',
+      splitLine: {
+        show: false
+      }
     },
     yAxis: {
       type: 'value',
@@ -116,22 +122,15 @@
   chartCpu.setOption(option);
 
 
-  // var timeTicket = setInterval(function() {
-  //   for (var i = 0; i < 1; i++) {
-  //     data.shift();
-  //     data.push(randomData());
-  //   }
-  //   chartCpu.setOption({
-  //     series: [{
-  //       data: data
-  //     }]
-  //   });
-  // }, 1000);
-
   var memData = [];
   var option = {
     title: {
       text: 'Memory'
+    },
+    toolbox: {
+      feature: {
+        saveAsImage: {}
+      }
     },
     tooltip: {
       trigger: 'axis',
@@ -151,6 +150,9 @@
     },
     xAxis: {
       type: 'time',
+      splitLine: {
+        show: false
+      }
     },
     yAxis: {
       type: 'value',
