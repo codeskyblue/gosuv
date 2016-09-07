@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	sigar "github.com/cloudfoundry/gosigar"
+	"github.com/codeskyblue/kexec"
 	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -398,6 +400,43 @@ func (s *Supervisor) hStopProgram(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func (s *Supervisor) hWebhook(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name, category := vars["name"], vars["category"]
+	proc, ok := s.procMap[name]
+	if !ok {
+		http.Error(w, fmt.Sprintf("proc %s not exist", strconv.Quote(name)), http.StatusForbidden)
+		return
+	}
+	hook := proc.Program.WebHook
+	if category == "github" {
+		gh := hook.Github
+		_ = gh.Secret
+		isRunning := proc.IsRunning()
+		s.stopAndWait(name)
+		go func() {
+			cmd := kexec.CommandString(hook.Command)
+			cmd.Dir = proc.Program.Dir
+			cmd.Stdout = proc.Output
+			cmd.Stderr = proc.Output
+			err := GoTimeout(cmd.Run, time.Duration(hook.Timeout)*time.Second)
+			if err == ErrGoTimeout {
+				cmd.Terminate(syscall.SIGTERM)
+			}
+			if err != nil {
+				log.Warnf("webhook command error: %v", err)
+				// Trigger pushover notification
+			}
+			if isRunning {
+				proc.Operate(StartEvent)
+			}
+		}()
+		io.WriteString(w, "success triggered")
+	} else {
+		log.Warnf("unknown webhook category: %v", category)
+	}
+}
+
 var upgrader = websocket.Upgrader{}
 
 func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
@@ -619,6 +658,8 @@ func newSupervisorHandler() (suv *Supervisor, hdlr http.Handler, err error) {
 	r.HandleFunc("/ws/events", suv.wsEvents)
 	r.HandleFunc("/ws/logs/{name}", suv.wsLog)
 	r.HandleFunc("/ws/perfs/{name}", suv.wsPerf)
+
+	r.HandleFunc("/webhooks/{name}/{category}", suv.hWebhook).Methods("POST")
 
 	return suv, r, nil
 }

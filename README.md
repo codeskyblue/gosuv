@@ -17,7 +17,7 @@ Features
 	* [x] Memory and CPU monitor
 
 * [x] HTTP Basic auth
-* [ ] Github webhook
+* [x] Github webhook
 * [ ] Single log page, include search support
 * [ ] 中文文档
 
