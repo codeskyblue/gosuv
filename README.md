@@ -14,7 +14,7 @@ Features
 	* [ ] Edit support
 	* [ ] Delete support
 	* [ ] Path auto complete <https://github.com/twitter/typeahead.js>
-	* [ ] Memory and CPU monitor
+	* [x] Memory and CPU monitor
 
 * [x] HTTP Basic auth
 * [ ] Github webhook

@@ -113,6 +113,13 @@ type Program struct {
 			Users  []string `yaml:"users"`
 		} `yaml:"pushover,omitempty"`
 	} `yaml:"notifications,omitempty" json:"-"`
+	WebHook struct {
+		Github struct {
+			Secret string `yaml:"secret"`
+		} `yaml:"github"`
+		Command string `yaml:"command"`
+		Timeout int    `yaml:"timeout"`
+	} `yaml:"webhook,omitempty" json:"-"`
 }
 
 func (p *Program) Check() error {
