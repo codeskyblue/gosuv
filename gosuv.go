@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -130,7 +133,7 @@ func checkServerStatus() error {
 	var ret JSONResponse
 	err = json.Unmarshal(body, &ret)
 	if err != nil {
-		return err
+		return errors.New("json loads error: " + string(body))
 	}
 	if ret.Status != 0 {
 		return fmt.Errorf("%v", ret.Value)
@@ -148,22 +151,29 @@ func actionStatus(c *cli.Context) error {
 	return nil
 }
 
+func postForm(pathname string, data url.Values) (r JSONResponse, err error) {
+	resp, err := http.PostForm(cfg.Client.ServerURL+pathname, data)
+	if err != nil {
+		return r, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return r, err
+	}
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return r, fmt.Errorf("POST %v %v", strconv.Quote(pathname), string(body))
+	}
+	return r, nil
+}
+
 func actionShutdown(c *cli.Context) error {
 	restart := c.Bool("restart")
 	if restart {
 		log.Fatal("Restart not implemented.")
 	}
-	resp, err := http.Post(cfg.Client.ServerURL+"/api/shutdown", "application/x-www-form-urlencoded", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var ret JSONResponse
-	err = json.Unmarshal(body, &ret)
+	ret, err := postForm("/api/shutdown", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -172,17 +182,7 @@ func actionShutdown(c *cli.Context) error {
 }
 
 func actionReload(c *cli.Context) error {
-	resp, err := http.Post(cfg.Client.ServerURL+"/api/reload", "application/x-www-form-urlencoded", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var ret JSONResponse
-	err = json.Unmarshal(body, &ret)
+	ret, err := postForm("/api/reloads", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
