@@ -182,7 +182,7 @@ func actionShutdown(c *cli.Context) error {
 }
 
 func actionReload(c *cli.Context) error {
-	ret, err := postForm("/api/reloads", nil)
+	ret, err := postForm("/api/reload", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

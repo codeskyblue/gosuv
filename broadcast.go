@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codeskyblue/rbuf"
+	"github.com/glycerine/rbuf"
 	"github.com/qiniu/log"
 )
 

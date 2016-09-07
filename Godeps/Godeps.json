@@ -33,7 +33,7 @@
 		},
 		{
 			"ImportPath": "github.com/glycerine/rbuf",
-			"Rev": "b8b438717ac043d5224cc7f079b866e3b9ea0599"
+			"Rev": "e57eda7aada105c8b00090b66e338a6413c3fbe9"
 		},
 		{
 			"ImportPath": "github.com/go-yaml/yaml",
@@ -56,6 +56,10 @@
 			"Rev": "b6ab76f1fe9803ee1d59e7e5b2a797c1fe897ce5"
 		},
 		{
+			"ImportPath": "github.com/jtolds/gls",
+			"Rev": "9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690"
+		},
+		{
 			"ImportPath": "github.com/kennygrant/sanitize",
 			"Rev": "bf9c39a678d8e26aeee60d5fe733cad47a7a6871"
 		},
@@ -63,6 +67,31 @@
 			"ImportPath": "github.com/qiniu/log",
 			"Comment": "v1.0.00-2-ge002bc2",
 			"Rev": "e002bc2020b19bfa61ed378cc5407383dbd2f346"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/assertions",
+			"Comment": "1.5.0-405-g01fedaa",
+			"Rev": "01fedaa993c0a9f9aa55111501cd7c81a49e812e"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/assertions/internal/oglematchers",
+			"Comment": "1.5.0-405-g01fedaa",
+			"Rev": "01fedaa993c0a9f9aa55111501cd7c81a49e812e"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/goconvey/convey",
+			"Comment": "1.5.0-449-g530dd3d",
+			"Rev": "530dd3d2cafa09958178e8c557bc4abeea1651a5"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/goconvey/convey/gotest",
+			"Comment": "1.5.0-449-g530dd3d",
+			"Rev": "530dd3d2cafa09958178e8c557bc4abeea1651a5"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/goconvey/convey/reporting",
+			"Comment": "1.5.0-449-g530dd3d",
+			"Rev": "530dd3d2cafa09958178e8c557bc4abeea1651a5"
 		},
 		{
 			"ImportPath": "github.com/urfave/cli",

@@ -114,17 +114,17 @@ Only 4 states. [ref](http://supervisord.org/subprocess.html#process-states)
 Configuration example
 
 ```yaml
-notifications:
-  on:
-    fatal: true
-  pushover:
-    api_key: [token]
-    users:
-    - [user1]
-    - [user2]
+- demo-program:
+  command: ...
+  notifications:
+    pushover:
+      api_key: [token]
+      users:
+      - [user1]
+      - [user2]
 ```
-### Pushover
-<https://pushover.net/api>
+
+Now only support [pushover](https://pushover.net/api), and only status change to fatal will get notified.
 
 # Plugin Design (todo)
 Current plugins:

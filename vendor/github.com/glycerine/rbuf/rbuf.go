@@ -226,6 +226,32 @@ func (b *FixedSizeRingBuf) Write(p []byte) (n int, err error) {
 	}
 }
 
+//
+// WriteAndMaybeOverwriteOldestData always consumes the full
+// buffer p, even if that means blowing away the oldest
+// unread bytes in the ring to make room. In reality, only the last
+// min(len(p),b.N) bytes of p will end up being written to the ring.
+//
+// This allows the ring to act as a record of the most recent
+// b.N bytes of data -- a kind of temporal LRU cache, so the
+// speak. The linux kernel's dmesg ring buffer is similar.
+//
+func (b *FixedSizeRingBuf) WriteAndMaybeOverwriteOldestData(p []byte) (n int, err error) {
+	writeCapacity := b.N - b.Readable
+	if len(p) > writeCapacity {
+		b.Advance(len(p) - writeCapacity)
+	}
+	startPos := 0
+	if len(p) > b.N {
+		startPos = len(p) - b.N
+	}
+	n, err = b.Write(p[startPos:])
+	if err != nil {
+		return n, err
+	}
+	return len(p), nil
+}
+
 // WriteTo and ReadFrom avoid intermediate allocation and copies.
 
 // WriteTo avoids intermediate allocation and copies.

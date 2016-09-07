@@ -36,7 +36,15 @@
   <div class="container">
     <div class="col-md-12">
       <h1>{{name}}</h1>
-      <div id="main" style="width: 100%;height:250px;"></div>
+      <p>
+        pid: 11234
+        <br> status: running
+        <br> time: 2016/09/07 12:00:00
+      </p>
+    </div>
+    <div class="col-md-12">
+      <div id="chart-cpu" style="width: 100%;height:250px;"></div>
+      <div id="chart-mem" style="width: 100%;height:250px;"></div>
     </div>
   </div>
   <script type="text/javascript">
@@ -51,30 +59,130 @@
   <script src="/res/js/settings.js"></script>
   <script type="text/javascript">
   // 基于准备好的dom，初始化echarts实例
-  var myChart = echarts.init(document.getElementById('main'));
+  var chartCpu = echarts.init(document.getElementById('chart-cpu'));
+  var chartMem = echarts.init(document.getElementById('chart-mem'));
 
   // 指定图表的配置项和数据
+  var baseTime = new Date().getTime();
+  var i = 0;
+
+  function randomData() {
+    i += 1;
+    return {
+      value: [baseTime + i * 1000, Math.random() * 100]
+    }
+  }
+  var data = [];
+
   var option = {
     title: {
       text: 'CPU'
     },
-    tooltip: {},
+    toolbox: {
+      feature: {
+        saveAsImage: {}
+      }
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: function(params) {
+        params = params[0];
+        // console.log(params)
+        var date = new Date(params.value[0]);
+        return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
+      },
+      axisPointer: {
+        animation: false
+      }
+    },
     legend: {
-      data: ['销量']
+      data: ['Total']
     },
     xAxis: {
-      data: ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
+      type: 'time',
     },
-    yAxis: {},
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      axisLabel: {
+        formatter: '{value} %'
+      },
+    },
     series: [{
-      name: '销量',
-      type: 'bar',
-      data: [5, 20, 36, 10, 10, 20]
+      name: 'Total',
+      type: 'line',
+      data: data,
+      animation: false,
+      smooth: true,
+      areaStyle: {
+        normal: {}
+      },
     }]
-  };
+  }
 
+  for (var i = 0; i < 100; i++) {
+    data.push(randomData());
+  }
   // 使用刚指定的配置项和数据显示图表。
-  myChart.setOption(option);
+  chartCpu.setOption(option);
+
+  var timeTicket = setInterval(function() {
+    for (var i = 0; i < 1; i++) {
+      data.shift();
+      data.push(randomData());
+    }
+    chartCpu.setOption({
+      series: [{
+        data: data
+      }]
+    });
+  }, 1000);
+
+  var option = {
+    title: {
+      text: 'Memory'
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: function(params) {
+        params = params[0];
+        // console.log(params)
+        var date = new Date(params.value[0]);
+        return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
+      },
+      axisPointer: {
+        animation: false
+      }
+    },
+    legend: {
+      data: ['Total']
+    },
+    xAxis: {
+      type: 'time',
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        formatter: function(value, index) {
+          return formatBytes(value);
+        }
+      },
+    },
+    series: [{
+      name: 'Total',
+      type: 'line',
+      data: data,
+      animation: false,
+      smooth: true,
+      areaStyle: {
+        normal: {
+          color: "gray",
+        }
+      },
+    }]
+  }
+  chartMem.setOption(option);
   </script>
 </body>
 </header>

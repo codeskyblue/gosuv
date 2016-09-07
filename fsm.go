@@ -131,14 +131,16 @@ func (p *Program) Check() error {
 func (p *Program) RunNotification() {
 	po := p.Notifications.Pushover
 	if po.ApiKey != "" && len(po.Users) > 0 {
-		log.Println("TODO: trigger pushover notification")
 		for _, user := range po.Users {
-			pushover.Notify(pushover.Params{
+			err := pushover.Notify(pushover.Params{
 				Token:   po.ApiKey,
 				User:    user,
-				Title:   p.Name,
-				Message: "todo",
+				Title:   "gosuv",
+				Message: fmt.Sprintf("%s change to fatal", p.Name),
 			})
+			if err != nil {
+				log.Warnf("pushover error: %v", err)
+			}
 		}
 	}
 }
