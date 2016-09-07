@@ -581,8 +581,17 @@ func (s *Supervisor) catchExitSignal() {
 	}()
 }
 
-func newSupervisorHandler() (hdlr http.Handler, err error) {
-	suv := &Supervisor{
+func (s *Supervisor) AutoStartPrograms() {
+	for _, proc := range s.procMap {
+		if proc.Program.StartAuto {
+			log.Printf("auto start %s", strconv.Quote(proc.Name))
+			proc.Operate(StartEvent)
+		}
+	}
+}
+
+func newSupervisorHandler() (suv *Supervisor, hdlr http.Handler, err error) {
+	suv = &Supervisor{
 		ConfigDir: defaultConfigDir,
 		pgMap:     make(map[string]Program, 0),
 		procMap:   make(map[string]*Process, 0),
@@ -611,5 +620,5 @@ func newSupervisorHandler() (hdlr http.Handler, err error) {
 	r.HandleFunc("/ws/logs/{name}", suv.wsLog)
 	r.HandleFunc("/ws/perfs/{name}", suv.wsPerf)
 
-	return r, nil
+	return suv, r, nil
 }

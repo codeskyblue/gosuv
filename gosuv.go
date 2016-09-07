@@ -75,7 +75,7 @@ func equinoxUpdate(channel string, skipConfirm bool) error {
 }
 
 func actionStartServer(c *cli.Context) error {
-	hdlr, err := newSupervisorHandler()
+	suv, hdlr, err := newSupervisorHandler()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,6 +87,7 @@ func actionStartServer(c *cli.Context) error {
 
 	addr := cfg.Server.Addr
 	if c.Bool("foreground") {
+		suv.AutoStartPrograms()
 		log.Printf("server listen on %v", addr)
 		log.Fatal(http.ListenAndServe(addr, nil))
 	} else {
@@ -191,7 +192,7 @@ func actionReload(c *cli.Context) error {
 }
 
 func actionConfigTest(c *cli.Context) error {
-	if _, err := newSupervisorHandler(); err != nil {
+	if _, _, err := newSupervisorHandler(); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("test is successful")
