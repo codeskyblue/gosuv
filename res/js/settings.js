@@ -17,9 +17,9 @@ var ws = newWebsocket('/ws/perfs/' + name, {
         vm.pid = data.pid;
         vm.subPids = data.sub_pids;
         console.log("pid", data.pid, data); //evt.data.pid);
-        if (memData && data.mem && data.mem.rss) {
+        if (memData && data.mem && data.mem.Resident) {
             memData.push({
-                value: [new Date(), data.mem.rss],
+                value: [new Date(), data.mem.Resident],
             })
             if (memData.length > 10) {
                 memData.shift();

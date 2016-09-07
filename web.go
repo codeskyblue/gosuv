@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	sigar "github.com/cloudfoundry/gosigar"
 	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -477,22 +478,18 @@ func getAllSubPids(pid int) (subps []int, err error) {
 	return
 }
 
-func getTotalMem(pids []int) *process.MemoryInfoStat {
-	minfo := &process.MemoryInfoStat{}
+func getTotalMem(pids []int) sigar.ProcMem {
+	mem := sigar.ProcMem{}
 	for _, pid := range pids {
-		p, err := process.NewProcess(int32(pid))
-		if err != nil {
+		m := sigar.ProcMem{}
+		if err := m.Get(pid); err != nil {
 			continue
 		}
-		m, err := p.MemoryInfo()
-		if err != nil {
-			continue
-		}
-		minfo.RSS += m.RSS
-		minfo.Swap += m.Swap
-		minfo.VMS += m.VMS
+		mem.Resident += m.Resident
+		mem.Size += m.Size
+		mem.Share += m.Share
 	}
-	return minfo
+	return mem
 }
 
 func getTotalCpu(pids []int) float64 {
@@ -505,7 +502,6 @@ func getTotalCpu(pids []int) float64 {
 		// still need to fix here
 		// use gosigar instead
 		n, err := p.Percent(300 * time.Millisecond)
-		log.Println(p.Pid, n, err)
 		if err != nil {
 			continue
 		}
@@ -531,6 +527,7 @@ func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for {
+		// c.SetWriteDeadline(time.Now().Add(3 * time.Second))
 		if proc.cmd == nil || proc.cmd.Process == nil {
 			log.Println("process not running")
 			return
@@ -544,18 +541,13 @@ func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 		pids := append(spids, pid)
 
 		log.Println(pids)
-		mstat := getTotalMem(pids)
+		mem := getTotalMem(pids)
 		pcpu := getTotalCpu(pids)
-		// for _, spid := range spids {
-		// 	fmt.Println("spid:", spid)
-		// }
 
-		// mstat, _ := ps.MemoryInfo()
-		// pcpu, _ := ps.Percent(300 * time.Millisecond)
 		err = c.WriteJSON(map[string]interface{}{
 			"pid":      pid,
 			"sub_pids": spids,
-			"mem":      mstat,
+			"mem":      mem,
 			"cpu":      pcpu,
 		})
 		if err != nil {
