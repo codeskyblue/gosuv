@@ -107,6 +107,7 @@ type Program struct {
 	StartAuto     bool     `yaml:"start_auto" json:"startAuto"`
 	StartRetries  int      `yaml:"start_retries" json:"startRetries"`
 	StartSeconds  int      `yaml:"start_seconds" json:"startSeconds"`
+	User          string   `yaml:"user,omitempty" json:"user"`
 	Notifications struct {
 		Pushover struct {
 			ApiKey string   `yaml:"api_key"`
@@ -165,10 +166,16 @@ type Process struct {
 	Status     string `json:"status"`
 }
 
+// FIXME(ssx): maybe need to return error
 func (p *Process) buildCommand() *kexec.KCommand {
-	cmd := kexec.CommandString(p.Command) // Not tested here, I think it should work
+	cmd := kexec.CommandString(p.Command)
 	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
 	cmd.Dir = p.Dir
+	if p.User != "" {
+		if err := cmd.SetUser(p.User); err != nil {
+			log.Warnf("cmd:%s chusr to %s failed", p.Name, p.User)
+		}
+	}
 	logDir := filepath.Join(defaultConfigDir, "log", sanitize.Name(p.Name))
 	if !IsDir(logDir) {
 		os.MkdirAll(logDir, 0755)

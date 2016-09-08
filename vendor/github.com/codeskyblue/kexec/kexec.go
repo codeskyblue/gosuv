@@ -9,7 +9,7 @@ import (
 type KCommand struct {
 	*exec.Cmd
 
-	errChs   []chan error
+	errCs    []chan error
 	err      error
 	finished bool
 	once     sync.Once
@@ -23,19 +23,20 @@ func (c *KCommand) Run() error {
 	return c.Wait()
 }
 
+// This Wait wraps exec.Wait, but support multi call
 func (k *KCommand) Wait() error {
 	if k.Process == nil {
 		return errors.New("exec: not started")
 	}
 	k.once.Do(func() {
-		if k.errChs == nil {
-			k.errChs = make([]chan error, 0)
+		if k.errCs == nil {
+			k.errCs = make([]chan error, 0)
 		}
 		go func() {
 			k.err = k.Cmd.Wait()
 			k.mu.Lock()
 			k.finished = true
-			for _, errC := range k.errChs {
+			for _, errC := range k.errCs {
 				errC <- k.err
 			}
 			k.mu.Unlock()
@@ -47,7 +48,7 @@ func (k *KCommand) Wait() error {
 		return k.err
 	}
 	errC := make(chan error, 1)
-	k.errChs = append(k.errChs, errC)
+	k.errCs = append(k.errCs, errC)
 	k.mu.Unlock()
 	return <-errC
 }

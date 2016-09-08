@@ -1,15 +1,27 @@
 # gosuv
 [![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
 
-## Should not use in production now (current is in alpha)
+## Should not use in production now (current is in beta)
 Process management writtern by golang, inspired by python-supervisor
 
-Features
+## So why write another supervisor?
+I have been using python-supervisor for many years and there are something uncomfortable feelings.
 
-* [x] Realtime log view
+1. Log can't contains ANSI color chars
+1. The configuration file can add on the web, often forgot some settings.
+1. `supervisorctl reload` will cause supervisord restarted
+1. Hard to set status change to fatal notifications.
+1. No process performance monitor page.
+1. Program starts with no common environ, eg, missing HOME and USER variable
+1. Kill process default is not group kill which make sub process still running.
+1. More... will added when I think of it.
+
+## Features
+
 * [x] Web control page
 	
-	* [x] Start, Stop, Tail, Reload
+  * [x] Start, Stop, Tail, Reload
+  * [x] Realtime log
 	* [x] Add program support
 	* [ ] Edit support
 	* [ ] Delete support
@@ -49,8 +61,8 @@ go-bindata-assetfs -tags bindata res/...
 go build -tags bindata
 ```
 
-## Usage
-Start server in the background
+## Quick start
+After you installed gosuv, the first thing is to start server.
 
 ```sh
 gosuv start-server
@@ -63,7 +75,8 @@ $ gosuv status
 Server is running
 ```
 
-Open web <http://localhost:11313> to see the manager page.
+Open web <http://localhost:11313> to see the manager page. And follow the gif to add a program to gosuv.
+
 
 ![gosuv web](docs/gosuv.gif)
 
@@ -90,6 +103,8 @@ client:
 
 Logs can be found in `$HOME/.gosuv/log/`
 
+Edit config file(default located in `$HOME/.gosuv/programs.yml`) and run `gosuv reload` will take effect immediately.
+
 ## Design
 HTTP is follow the RESTFul guide.
 
@@ -110,7 +125,7 @@ Only 4 states. [ref](http://supervisord.org/subprocess.html#process-states)
 
 ![states](docs/states.png)
 
-## Notification (todo)
+## Notification
 Configuration example
 
 ```yaml
@@ -126,26 +141,20 @@ Configuration example
 
 Now only support [pushover](https://pushover.net/api), and only status change to fatal will get notified.
 
-# Plugin Design (todo)
-Current plugins:
+## Integrate with github (todo)
+This is feature that will helps update your deployment environment once your updated in the github.
 
-- [tailf](https://github.com/codeskyblue/gosuv-tailf)
+This part is set in the `programs.yml`, take look the example
 
-All command plugin will store in `$HOME/.gosuv/cmdplugin`, gosuv will treat this plugin as a subcommand.
-
-for example:
-
-	$HOME/.gosuv/cmdplugin/ --.
-		|- showpid/
-			|- run
-
-There is a directory `showpid`
-
-When run `gosuv showpid`, file `run` will be called.
-
-
-## Use libs
-* <https://github.com/ahmetalpbalkan/govvv>
+```yml
+- demo-program:
+  command: python app.py
+  directory: /opt/demo
+  webhook:
+    github:
+      secret: 123456
+      command: git pull origin master
+```
 
 ## LICENSE
 [MIT](LICENSE)

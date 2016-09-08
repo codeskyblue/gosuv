@@ -1,6 +1,7 @@
 package kexec
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -14,8 +15,8 @@ func Command(name string, arg ...string) *KCommand {
 
 func CommandString(command string) *KCommand {
 	cmd := exec.Command("cmd", "/c", command)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	//cmd.Stdout = os.Stdout
+	//cmd.Stderr = os.Stderr
 	return &KCommand{
 		Cmd: cmd,
 	}
@@ -30,4 +31,10 @@ func (p *KCommand) Terminate(sig os.Signal) (err error) {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	return c.Run()
+}
+
+// SetUser not support on windws
+func (k *KCommand) SetUser(name string) (err error) {
+	log.Printf("Can not set user(%s) on windows", name)
+	return nil
 }

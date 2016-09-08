@@ -14,29 +14,51 @@ This lib has been used in [fswatch](https://github.com/codeskyblue/fswatch).
 
 example1:
 
-	package main
+```go
+package main
 
-	import "github.com/codeskyblue/kexec"
+import "github.com/codeskyblue/kexec"
 
-	func main(){
-		p := kexec.Command("python", "flask_main.py")
-		p.Start()
-		p.Terminate(syscall.SIGINT)
-	}
+func main(){
+	p := kexec.Command("python", "flask_main.py")
+	p.Start()
+	p.Terminate(syscall.SIGINT)
+}
+```
 	
 example2: see more [examples](examples)
 
-	package main
-	
-	import "github.com/codeskyblue/kexec"
+```go
+package main
 
-	func main() {
-		// In unix will call: bash -c "python flask_main.py"
-		// In windows will call: cmd /c "python flask_main.py"
-		p := kexec.CommandString("python flask_main.py")
-		p.Start()
-		p.Terminate(syscall.SIGKILL)
-	}
+import (
+	"github.com/codeskyblue/kexec"
+)
+
+func main() {
+	// In unix will call: bash -c "python flask_main.py"
+	// In windows will call: cmd /c "python flask_main.py"
+	p := kexec.CommandString("python flask_main.py")
+	p.Stdout = os.Stdout
+	p.Stderr = os.Stderr
+	p.Start()
+	p.Terminate(syscall.SIGKILL)
+}
+```
+
+example3:
+
+```go
+package main
+
+import "github.com/codeskyblue/kexec"
+
+func main() {
+	p := kexec.Command("whoami")
+	p.SetUser("codeskyblue") // Only works on darwin and linux
+	p.Run()
+}
+```
 
 ## PS
 This lib also support you call `Wait()` twice, which is not support by `os/exec`
