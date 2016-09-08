@@ -271,9 +271,9 @@ func NewProcess(pg Program) *Process {
 		stopC:     make(chan syscall.Signal),
 		retryLeft: pg.StartRetries,
 		Status:    string(Stopped),
-		Output:    NewQuickLossBroadcastWriter(outputBufferSize), // NewBufferBroadcast(outputBufferSize),
-		Stdout:    NewQuickLossBroadcastWriter(outputBufferSize), //   NewBufferBroadcast(outputBufferSize),
-		Stderr:    NewQuickLossBroadcastWriter(outputBufferSize), // NewBufferBroadcast(outputBufferSize),
+		Output:    NewQuickLossBroadcastWriter(outputBufferSize),
+		Stdout:    NewQuickLossBroadcastWriter(outputBufferSize),
+		Stderr:    NewQuickLossBroadcastWriter(outputBufferSize),
 	}
 	pr.StateChange = func(_, newStatus FSMState) {
 		pr.Status = string(newStatus)

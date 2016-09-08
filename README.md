@@ -68,7 +68,7 @@ Open web <http://localhost:11313> to see the manager page.
 ![gosuv web](docs/gosuv.gif)
 
 ## Configuration
-Default config file stored in directory `$HOME/.gosuv/`
+Default config file stored in directory `$HOME/.gosuv/`, Set env-var `GOSUV_HOME_DIR` can change config file store directory.
 
 - file `programs.yml` contains all program settings.
 - file `config.yml` contains server config

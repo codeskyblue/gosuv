@@ -103,22 +103,22 @@ func (w *WriteBroadcaster) CloseWriters() error {
 	return nil
 }
 
-// nop writer
-type NopWriter struct{}
+// // nop writer
+// type NopWriter struct{}
 
-func (*NopWriter) Write(buf []byte) (int, error) {
-	return len(buf), nil
-}
+// func (*NopWriter) Write(buf []byte) (int, error) {
+// 	return len(buf), nil
+// }
 
-type nopWriteCloser struct {
-	io.Writer
-}
+// type nopWriteCloser struct {
+// 	io.Writer
+// }
 
-func (w *nopWriteCloser) Close() error { return nil }
+// func (w *nopWriteCloser) Close() error { return nil }
 
-func NopWriteCloser(w io.Writer) io.WriteCloser {
-	return &nopWriteCloser{w}
-}
+// func NopWriteCloser(w io.Writer) io.WriteCloser {
+// 	return &nopWriteCloser{w}
+// }
 
 // chan string writer
 type chanStrWriter struct {
