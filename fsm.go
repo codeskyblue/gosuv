@@ -106,7 +106,7 @@ type Program struct {
 	Dir           string   `yaml:"directory" json:"directory"`
 	StartAuto     bool     `yaml:"start_auto" json:"startAuto"`
 	StartRetries  int      `yaml:"start_retries" json:"startRetries"`
-	StartSeconds  int      `yaml:"start_seconds" json:"startSeconds"`
+	StartSeconds  int      `yaml:"start_seconds,omitempty" json:"startSeconds"`
 	User          string   `yaml:"user,omitempty" json:"user"`
 	Notifications struct {
 		Pushover struct {
