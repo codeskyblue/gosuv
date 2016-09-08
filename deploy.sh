@@ -13,7 +13,7 @@ echo "VER: $VER"
 
 ./equinox release \
 	    --channel="stable" \
-        --version="$VERSION" \
+        --version="$VER" \
         --app="app_8Gji4eEAdDx" \
         --platforms="darwin_amd64 linux_amd64" \
         --signing-key="equinox.key" \
