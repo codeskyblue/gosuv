@@ -41,9 +41,8 @@ Standalone binary can be download from one of the following addresses
 
 | Branch | Source | Address |
 |--------|--------|---------|
-| stable | github(Recommend) | <https://github.com/codeskyblue/gosuv/releases/latest>|
-| stable | equinox| <https://dl.equinox.io/shengxiang/gosuv/stable> |
-| dev    | equinox| <https://dl.equinox.io/shengxiang/gosuv/dev> |
+| latest | equinox| <https://dl.equinox.io/shengxiang/gosuv/stable> |
+| stable | github | <https://github.com/codeskyblue/gosuv/releases/latest>|
 
 Or if you have go enviroment, you can also build from source.
 
