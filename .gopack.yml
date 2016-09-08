@@ -5,4 +5,4 @@ includes: []
 excludes:
   - \.git
 script:
-  - go build -tags bindata
+  - go build -tags bindata -ldflags "-X main.Version=$(git describe --tags --dirty --always)"
