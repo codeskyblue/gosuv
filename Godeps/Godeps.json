@@ -64,6 +64,10 @@
 			"Rev": "bf9c39a678d8e26aeee60d5fe733cad47a7a6871"
 		},
 		{
+			"ImportPath": "github.com/mitchellh/go-ps",
+			"Rev": "e2d21980687ce16e58469d98dcee92d27fbbd7fb"
+		},
+		{
 			"ImportPath": "github.com/qiniu/log",
 			"Comment": "v1.0.00-2-ge002bc2",
 			"Rev": "e002bc2020b19bfa61ed378cc5407383dbd2f346"

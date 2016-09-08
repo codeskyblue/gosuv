@@ -4,10 +4,11 @@ var vm = new Vue({
     data: {
         name: name,
         pid: '-',
-        subPids: [],
+        childPids: [],
     }
 });
 
+var maxDataCount = 30;
 var ws = newWebsocket('/ws/perfs/' + name, {
     onopen: function(evt) {
         console.log(evt);
@@ -15,13 +16,13 @@ var ws = newWebsocket('/ws/perfs/' + name, {
     onmessage: function(evt) {
         var data = JSON.parse(evt.data);
         vm.pid = data.pid;
-        vm.subPids = data.sub_pids;
+        vm.childPids = data.pids;
         console.log("pid", data.pid, data); //evt.data.pid);
-        if (memData && data.mem && data.mem.Resident) {
+        if (memData && data.rss) {
             memData.push({
-                value: [new Date(), data.mem.Resident],
+                value: [new Date(), data.rss],
             })
-            if (memData.length > 10) {
+            if (memData.length > maxDataCount) {
                 memData.shift();
             }
             chartMem.setOption({
@@ -30,11 +31,11 @@ var ws = newWebsocket('/ws/perfs/' + name, {
                 }]
             });
         }
-        if (cpuData && data.cpu !== undefined) {
+        if (cpuData && data.pcpu !== undefined) {
             cpuData.push({
-                value: [new Date(), data.cpu],
+                value: [new Date(), data.pcpu],
             })
-            if (cpuData.length > 10) {
+            if (cpuData.length > maxDataCount) {
                 cpuData.shift();
             }
             chartCpu.setOption({

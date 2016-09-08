@@ -38,7 +38,7 @@
       <h1>{{name}}</h1>
       <p>
         pid: {{pid}}
-        <br> sub pids: {{subPids.join(',')}}
+        <br> sub pids: {{childPids.join(',')}}
       </p>
       <p>
         <br> status: running
@@ -67,7 +67,13 @@
   var chartMem = echarts.init(document.getElementById('chart-mem'));
 
   // 指定图表的配置项和数据
+
   var cpuData = [];
+  for (var i = maxDataCount; i > 0; i -= 1) {
+    cpuData.push({
+      value: [new Date().getTime() - 1000 * i, 0]
+    })
+  }
 
   var option = {
     title: {
@@ -123,6 +129,11 @@
 
 
   var memData = [];
+  for (var i = maxDataCount; i > 0; i -= 1) {
+    memData.push({
+      value: [new Date().getTime() - 1000 * i, 0]
+    })
+  }
   var option = {
     title: {
       text: 'Memory'

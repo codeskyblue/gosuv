@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	sigar "github.com/cloudfoundry/gosigar"
 	mps "github.com/mitchellh/go-ps"
 )
 
@@ -25,15 +24,21 @@ func NewProcess(pid int) (p Process, err error) {
 	}, nil
 }
 
-func (p *Process) Mem() (m sigar.ProcMem, err error) {
-	err = m.Get(p.Pid())
-	return
-}
+// func (p *Process) Mem() (m sigar.ProcMem, err error) {
+// 	err = m.Get(p.Pid())
+// 	return
+// }
 
 type ProcInfo struct {
-	Pid  int
-	Rss  int
-	PCpu float64
+	Pid  int     `json:"pid"`
+	Pids []int   `json:"pids"`
+	Rss  int     `json:"rss"`
+	PCpu float64 `json:"pcpu"`
+}
+
+func (pi *ProcInfo) Add(add ProcInfo) {
+	pi.Rss += add.Rss
+	pi.PCpu += add.PCpu
 }
 
 // CPU Percent * 100
@@ -77,5 +82,20 @@ func (p *Process) Children(recursive bool) (cps []Process) {
 		}
 	}
 	travel(p.Pid())
+	return
+}
+
+//Sum everything
+func (p *Process) ChildrenProcInfo(recursive bool) (pi ProcInfo) {
+	cps := p.Children(recursive)
+	for _, cp := range cps {
+		info, er := cp.ProcInfo()
+		if er != nil {
+			continue
+		}
+		pi.Add(info)
+		pi.Pids = append(pi.Pids, cp.Pid())
+	}
+	pi.Pid = p.Pid()
 	return
 }

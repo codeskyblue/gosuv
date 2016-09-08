@@ -17,14 +17,12 @@ import (
 	"syscall"
 	"time"
 
-	sigar "github.com/cloudfoundry/gosigar"
+	"github.com/codeskyblue/gosuv/gops"
 	"github.com/codeskyblue/kexec"
 	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	gps "github.com/mitchellh/go-ps"
 	"github.com/qiniu/log"
-	"github.com/shirou/gopsutil/process"
 )
 
 var defaultConfigDir string
@@ -497,58 +495,6 @@ func (s *Supervisor) wsLog(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getAllSubPids(pid int) (subps []int, err error) {
-	pses, err := gps.Processes()
-	if err != nil {
-		return
-	}
-	pidMap := make(map[int][]gps.Process, 0)
-	for _, p := range pses {
-		pidMap[p.PPid()] = append(pidMap[p.PPid()], p)
-	}
-	var travel func(int)
-	travel = func(pid int) {
-		for _, p := range pidMap[pid] {
-			subps = append(subps, p.Pid())
-			travel(p.Pid())
-		}
-	}
-	travel(pid)
-	return
-}
-
-func getTotalMem(pids []int) sigar.ProcMem {
-	mem := sigar.ProcMem{}
-	for _, pid := range pids {
-		m := sigar.ProcMem{}
-		if err := m.Get(pid); err != nil {
-			continue
-		}
-		mem.Resident += m.Resident
-		mem.Size += m.Size
-		mem.Share += m.Share
-	}
-	return mem
-}
-
-func getTotalCpu(pids []int) float64 {
-	var pcpu float64
-	for _, pid := range pids {
-		p, err := process.NewProcess(int32(pid))
-		if err != nil {
-			continue
-		}
-		// still need to fix here
-		// use gosigar instead
-		n, err := p.Percent(300 * time.Millisecond)
-		if err != nil {
-			continue
-		}
-		pcpu += n
-	}
-	return pcpu
-}
-
 // Performance
 func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -572,23 +518,18 @@ func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		pid := proc.cmd.Process.Pid
-		spids, err := getAllSubPids(pid)
+		ps, err := gops.NewProcess(pid)
 		if err != nil {
-			log.Println(err)
 			break
 		}
-		pids := append(spids, pid)
+		mainPinfo, err := ps.ProcInfo()
+		if err != nil {
+			break
+		}
+		pi := ps.ChildrenProcInfo(true)
+		pi.Add(mainPinfo)
 
-		log.Println(pids)
-		mem := getTotalMem(pids)
-		pcpu := getTotalCpu(pids)
-
-		err = c.WriteJSON(map[string]interface{}{
-			"pid":      pid,
-			"sub_pids": spids,
-			"mem":      mem,
-			"cpu":      pcpu,
-		})
+		err = c.WriteJSON(pi)
 		if err != nil {
 			break
 		}
