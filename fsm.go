@@ -107,6 +107,7 @@ type Program struct {
 	StartAuto     bool     `yaml:"start_auto" json:"startAuto"`
 	StartRetries  int      `yaml:"start_retries" json:"startRetries"`
 	StartSeconds  int      `yaml:"start_seconds,omitempty" json:"startSeconds"`
+	StopTimeout   int      `yaml:"stop_timeout,omitempty" json:"stopTimeout"`
 	User          string   `yaml:"user,omitempty" json:"user"`
 	Notifications struct {
 		Pushover struct {
@@ -164,6 +165,8 @@ type Process struct {
 	stopC      chan syscall.Signal
 	retryLeft  int
 	Status     string `json:"status"`
+
+	mu sync.Mutex
 }
 
 // FIXME(ssx): maybe need to return error
@@ -212,14 +215,20 @@ func (p *Process) waitNextRetry() {
 }
 
 func (p *Process) stopCommand() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if p.cmd == nil {
 		return
 	}
-	p.cmd.Terminate(syscall.SIGTERM)
+	if p.cmd.Process != nil {
+		p.cmd.Process.Signal(syscall.SIGTERM) // TODO(ssx): add it to config
+	}
 	select {
 	case <-GoFunc(p.cmd.Wait):
-	case <-time.After(3 * time.Second): // TODO: add 3s to config
-		p.cmd.Terminate(syscall.SIGKILL)
+		log.Printf("program(%s) quit normally", p.Name)
+	case <-time.After(time.Duration(p.StopTimeout) * time.Second): // TODO: add 3s to config
+		log.Printf("program(%s) terminate all", p.Name)
+		p.cmd.Terminate(syscall.SIGKILL) // cleanup
 	}
 	err := p.cmd.Wait() // This is OK, because Signal KILL will definitely work
 	prefixStr := "\n--- GOSUV LOG " + time.Now().Format("2006-01-02 15:04:05")
@@ -241,7 +250,6 @@ func (p *Process) IsRunning() bool {
 }
 
 func (p *Process) startCommand() {
-	p.stopCommand()
 	// p.Stdout.Reset()
 	// p.Stderr.Reset()
 	// p.Output.Reset() // Donot reset because log is still needed.
@@ -249,23 +257,30 @@ func (p *Process) startCommand() {
 	p.cmd = p.buildCommand()
 
 	p.SetState(Running)
+	if err := p.cmd.Start(); err != nil {
+		log.Warnf("program %s start failed: %v", p.Name, err)
+		p.SetState(Fatal)
+		return
+	}
 	go func() {
-		errC := GoFunc(p.cmd.Run)
+		errC := GoFunc(p.cmd.Wait)
 		startTime := time.Now()
 		select {
-		case err := <-errC:
-			log.Println(err, time.Since(startTime))
+		case <-errC:
+			// if p.cmd.Wait() returns, it means program and its sub process all quited. no need to kill again
+			// func Wait() will only return when program session finishs. (Only Tested on mac)
+			log.Printf("program(%s) finished, time used %v", p.Name, time.Since(startTime))
 			if time.Since(startTime) < time.Duration(p.StartSeconds)*time.Second {
 				if p.retryLeft == p.StartRetries { // If first time quit so fast, just set to fatal
 					p.SetState(Fatal)
-					log.Println("Start change to fatal")
+					log.Printf("program(%s) exit too quick, status -> fatal", p.Name)
 					return
 				}
 			}
 			p.waitNextRetry()
 		case <-p.stopC:
 			log.Println("recv stop command")
-			p.stopCommand()
+			p.stopCommand() // clean up all process
 		}
 	}()
 }
@@ -292,6 +307,9 @@ func NewProcess(pg Program) *Process {
 	}
 	if pr.StartSeconds <= 0 {
 		pr.StartSeconds = 3
+	}
+	if pr.StopTimeout <= 0 {
+		pr.StopTimeout = 3
 	}
 
 	pr.AddHandler(Stopped, StartEvent, func() {
