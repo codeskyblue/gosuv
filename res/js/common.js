@@ -41,3 +41,7 @@ function formatBytes(value) {
     else if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
     else return (bytes / 1073741824).toFixed(1) + " GB";
 }
+
+$(function(){
+    $(".tooltip-wraper").tooltip();
+})

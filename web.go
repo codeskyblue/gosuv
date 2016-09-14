@@ -448,6 +448,7 @@ func (s *Supervisor) wsEvents(w http.ResponseWriter, r *http.Request) {
 	ch := make(chan string, 0)
 	s.addStatusChangeListener(ch)
 	go func() {
+		_, _ = <-ch // ignore the history messages
 		for message := range ch {
 			// Question: type 1 ?
 			c.WriteMessage(1, []byte(message))

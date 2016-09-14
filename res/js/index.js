@@ -59,6 +59,9 @@ var vm = new Vue({
                 url: "/api/programs",
                 success: function(data) {
                     vm.programs = data;
+                    Vue.nextTick(function(){
+                        $('[data-toggle="tooltip"]').tooltip()
+                    })
                 }
             });
         },

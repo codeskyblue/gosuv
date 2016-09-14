@@ -54,7 +54,7 @@
       <button class="btn btn-default btn-sm" v-on:click="reload">
         <span class="glyphicon glyphicon-repeat"></span> Reload
       </button>
-      <button class="btn btn-default btn-sm" v-on:click="test">
+      <button class="btn btn-default btn-sm" v-on:click="test" data-toggle="tooltip" data-placement="bottom" title="Tooltip on bottom">
         <span class="glyphicon glyphicon-glass"></span> Test
       </button>
     </div>
@@ -84,6 +84,9 @@
               <a href="/settings/{{p.program.name}}" class="btn btn-default btn-xs">
                 <span class="glyphicon glyphicon-cog"></span> More
               </a>
+              <button class="btn btn-default btn-xs" data-toggle="tooltip" title="{{p.program.command}}" >
+                <span class="glyphicon glyphicon-info-sign"></span> Info
+              </button>
             </td>
           </tr>
           <!-- <tr class="success">
