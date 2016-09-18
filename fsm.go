@@ -88,11 +88,13 @@ func NewFSM(initState FSMState) *FSM {
 }
 
 // Only 4 states now is enough, I think
+// 2016-09-18 now five
 var (
 	Running   = FSMState("running")
 	Stopped   = FSMState("stopped")
 	Fatal     = FSMState("fatal")
 	RetryWait = FSMState("retry wait")
+	Stopping  = FSMState("stopping")
 
 	StartEvent   = FSMEvent("start")
 	StopEvent    = FSMEvent("stop")
@@ -217,9 +219,11 @@ func (p *Process) waitNextRetry() {
 func (p *Process) stopCommand() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	defer p.SetState(Stopped)
 	if p.cmd == nil {
 		return
 	}
+	p.SetState(Stopping)
 	if p.cmd.Process != nil {
 		p.cmd.Process.Signal(syscall.SIGTERM) // TODO(ssx): add it to config
 	}
@@ -242,7 +246,6 @@ func (p *Process) stopCommand() {
 		p.OutputFile = nil
 	}
 	p.cmd = nil
-	p.SetState(Stopped)
 }
 
 func (p *Process) IsRunning() bool {

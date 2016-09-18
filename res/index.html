@@ -72,7 +72,7 @@
             <td v-text="p.program.name"></td>
             <td v-html="p.status | colorStatus"></td>
             <td>
-              <button v-on:click="cmdStart(p.program.name)" class="btn btn-default btn-xs" :disabled="p.status=='running'">
+              <button v-on:click="cmdStart(p.program.name)" class="btn btn-default btn-xs" :disabled='["running", "stopping"].indexOf(p.status) != -1'>
                 <span class="glyphicon glyphicon-play"></span> Start
               </button>
               <button class="btn btn-default btn-xs" v-on:click="cmdStop(p.program.name)" :disabled="!canStop(p.status)">

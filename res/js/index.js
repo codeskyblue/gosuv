@@ -159,10 +159,12 @@ Vue.filter('colorStatus', function(value) {
         return "<span class='status' style='background-color:" + color + "'>" + text + "</span>";
     }
     switch (value) {
+        case "stopping":
+            return makeColorText(value, "#996633");
         case "running":
-            return makeColorText("running", "green");
+            return makeColorText(value, "green");
         case "fatal":
-            return makeColorText("fatal", "red");
+            return makeColorText(value, "red");
         default:
             return makeColorText(value, "gray");
     }
