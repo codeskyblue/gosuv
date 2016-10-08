@@ -79,13 +79,16 @@
                 <span class="glyphicon glyphicon-stop"></span> Stop
               </button>
               <button class="btn btn-default btn-xs" v-on:click="cmdTail(p.program.name)">
-                <span class="glyphicon glyphicon-text-size"></span> Tail
+                <span class="fa fa-file-text-o"></span> Log
               </button>
               <a href="/settings/{{p.program.name}}" class="btn btn-default btn-xs">
-                <span class="glyphicon glyphicon-cog"></span> More
+                <span class="fa fa-bar-chart"></span> Profiles
               </a>
-              <button class="btn btn-default btn-xs" data-toggle="tooltip" title="{{p.program.command}}" >
+              <button class="btn btn-default btn-xs" data-toggle="tooltip" title="{{p.program.command}}">
                 <span class="glyphicon glyphicon-info-sign"></span> Info
+              </button>
+              <button class="btn btn-default btn-xs" v-on:click="cmdDelete(p.program.name)">
+                <span class="color-red glyphicon glyphicon-trash"></span> Delete
               </button>
             </td>
           </tr>
@@ -124,7 +127,9 @@
         <div class="modal-content">
           <form id="formNewProgram" action="/api/programs" method="post">
             <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
               <h4 class="modal-title">New program</h4>
             </div>
             <div class="modal-body">
@@ -167,7 +172,9 @@
         <div class="modal-content">
           <form id="formNewProgram" action="/api/programs" method="post">
             <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
               <h4 class="modal-title">Tail</h4>
             </div>
             <div class="modal-body">

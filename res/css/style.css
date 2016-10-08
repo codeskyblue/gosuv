@@ -33,3 +33,7 @@ body {
 small.user {
     color: #cccccc;
 }
+
+.color-red {
+    color: red;
+}

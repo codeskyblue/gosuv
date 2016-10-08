@@ -37,7 +37,7 @@ func init() {
 type Supervisor struct {
 	ConfigDir string
 
-	names   []string
+	names   []string // order of programs
 	pgMap   map[string]Program
 	procMap map[string]*Process
 	mu      sync.Mutex
@@ -138,7 +138,6 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 			}
 		}()
 	} else {
-		// s.pgs = append(s.pgs, &pg)
 		s.names = append(s.names, pg.Name)
 		s.pgMap[pg.Name] = pg
 		s.procMap[pg.Name] = s.newProcess(pg)
@@ -190,12 +189,13 @@ func (s *Supervisor) loadDB() error {
 		if visited[pg.Name] {
 			continue
 		}
-		name := pg.Name
-		log.Printf("stop before delete program: %s", name)
-		s.stopAndWait(name)
-		delete(s.procMap, name)
-		delete(s.pgMap, name)
-		s.broadcastEvent(pg.Name + " deleted")
+		s.removeProgram(pg.Name)
+		// name := pg.Name
+		// log.Printf("stop before delete program: %s", name)
+		// s.stopAndWait(name)
+		// delete(s.procMap, name)
+		// delete(s.pgMap, name)
+		// s.broadcastEvent(name + " deleted")
 	}
 	return nil
 }
@@ -208,6 +208,22 @@ func (s *Supervisor) saveDB() error {
 		return err
 	}
 	return ioutil.WriteFile(s.programPath(), data, 0644)
+}
+
+func (s *Supervisor) removeProgram(name string) {
+	names := make([]string, 0, len(s.names))
+	for _, pName := range s.names {
+		if pName == name {
+			continue
+		}
+		names = append(names, pName)
+	}
+	s.names = names
+	log.Printf("stop before delete program: %s", name)
+	s.stopAndWait(name)
+	delete(s.procMap, name)
+	delete(s.pgMap, name)
+	s.broadcastEvent(name + " deleted")
 }
 
 type WebConfig struct {
@@ -356,6 +372,26 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 				"status": 0,
 			})
 		}
+	}
+	w.Write(data)
+}
+
+func (s *Supervisor) hDelProgram(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+
+	w.Header().Set("Content-Type", "application/json")
+	var data []byte
+	if _, ok := s.pgMap[name]; !ok {
+		data, _ = json.Marshal(map[string]interface{}{
+			"status": 1,
+			"error":  fmt.Sprintf("Program %s not exists", strconv.Quote(name)),
+		})
+	} else {
+		s.removeProgram(name)
+		s.saveDB()
+		data, _ = json.Marshal(map[string]interface{}{
+			"status": 0,
+		})
 	}
 	w.Write(data)
 }
@@ -593,6 +629,7 @@ func newSupervisorHandler() (suv *Supervisor, hdlr http.Handler, err error) {
 
 	r.HandleFunc("/api/programs", suv.hGetProgramList).Methods("GET")
 	r.HandleFunc("/api/programs/{name}", suv.hGetProgram).Methods("GET")
+	r.HandleFunc("/api/programs/{name}", suv.hDelProgram).Methods("DELETE")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/stop", suv.hStopProgram).Methods("POST")
