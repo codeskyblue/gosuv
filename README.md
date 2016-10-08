@@ -1,7 +1,9 @@
 # gosuv
 [![Build Status](https://travis-ci.org/codeskyblue/gosuv.svg)](https://travis-ci.org/codeskyblue/gosuv)
 
-## Should not use in production now (current is in beta)
+[中文README](README_ZH.md) 不是很全，能看懂英文的还是尽量看英文
+
+## current is in beta
 Process management writtern by golang, inspired by python-supervisor
 
 ## So why write another supervisor?
