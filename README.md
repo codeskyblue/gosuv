@@ -24,9 +24,9 @@ I have been using python-supervisor for many years and there are something uncom
   * [x] Realtime log
 	* [x] Add program support
 	* [ ] Edit support
-	* [ ] Delete support
-	* [ ] Path auto complete <https://github.com/twitter/typeahead.js>
+	* [x] Delete support
 	* [x] Memory and CPU monitor
+	* [ ] Path auto complete <https://github.com/twitter/typeahead.js>
 
 * [x] HTTP Basic auth
 * [x] Github webhook
