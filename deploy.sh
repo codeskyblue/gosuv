@@ -15,7 +15,7 @@ echo "VER: $VER"
 	    --channel="stable" \
         --version="$VER" \
         --app="app_8Gji4eEAdDx" \
-        --platforms="darwin_amd64 linux_amd64" \
+        --platforms="darwin_amd64 linux_amd64 linux_arm" \
         --signing-key="equinox.key" \
         --token="$EQUINOX_API_TOKEN" \
         -- -tags bindata -ldflags "-X main.Version=$VER"
