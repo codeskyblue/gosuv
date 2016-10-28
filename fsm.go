@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -133,9 +135,10 @@ func (p *Program) Check() error {
 	if p.Command == "" {
 		return errors.New("Program command empty")
 	}
-	if p.Dir != "" && !IsDir(p.Dir) {
-		return fmt.Errorf("Program dir(%s) not exists", p.Dir)
-	}
+	// Disable check, for Dir may contains env-vars
+	//if p.Dir != "" && !IsDir(p.Dir) {
+	//	return fmt.Errorf("Program dir(%s) not exists", p.Dir)
+	//}
 	return nil
 }
 
@@ -175,12 +178,6 @@ type Process struct {
 func (p *Process) buildCommand() *kexec.KCommand {
 	cmd := kexec.CommandString(p.Command)
 	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
-	cmd.Dir = p.Dir
-	if p.User != "" {
-		if err := cmd.SetUser(p.User); err != nil {
-			log.Warnf("cmd:%s chusr to %s failed", p.Name, p.User)
-		}
-	}
 	logDir := filepath.Join(defaultConfigDir, "log", sanitize.Name(p.Name))
 	if !IsDir(logDir) {
 		os.MkdirAll(logDir, 0755)
@@ -196,7 +193,39 @@ func (p *Process) buildCommand() *kexec.KCommand {
 	}
 	cmd.Stdout = io.MultiWriter(p.Stdout, p.Output, fout)
 	cmd.Stderr = io.MultiWriter(p.Stderr, p.Output, fout)
-	cmd.Env = append(os.Environ(), p.Environ...)
+	// config environ
+	cmd.Env = os.Environ() // inherit current vars
+	environ := map[string]string{}
+	if p.User != "" {
+		err := cmd.SetUser(p.User)
+		if err != nil {
+			log.Warnf("[%s] chusr to %s failed", p.Name, p.User)
+		} else {
+			var homeDir string
+			switch runtime.GOOS {
+			case "linux":
+				homeDir = "/home/" + p.User // FIXME(ssx): maybe there is a better way
+			case "darwin":
+				homeDir = "/Users/" + p.User
+			}
+			cmd.Env = append(cmd.Env, "HOME="+homeDir, "USER="+p.User)
+			environ["HOME"] = homeDir
+			environ["USER"] = p.User
+		}
+	}
+	cmd.Env = append(cmd.Env, p.Environ...)
+	mapping := func(key string) string {
+		val := os.Getenv(key)
+		if val != "" {
+			return val
+		}
+		return environ[key]
+	}
+	cmd.Dir = os.Expand(p.Dir, mapping)
+	if strings.HasPrefix(cmd.Dir, "~") {
+		cmd.Dir = mapping("HOME") + cmd.Dir[1:]
+	}
+	log.Infof("[%s] use dir: %s\n", p.Name, cmd.Dir)
 	return cmd
 }
 

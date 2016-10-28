@@ -341,6 +341,7 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 		Name:         r.FormValue("name"),
 		Command:      r.FormValue("command"),
 		Dir:          r.FormValue("dir"),
+		User:         r.FormValue("user"),
 		StartAuto:    r.FormValue("autostart") == "on",
 		StartRetries: retries,
 		// TODO: missing other values
