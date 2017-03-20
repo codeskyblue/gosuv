@@ -21,19 +21,38 @@ var vm = new Vue({
       line_count: 0,
     },
     programs: [],
+    edit: {
+      program: null,
+    }
   },
   methods: {
     addNewProgram: function() {
       console.log("Add")
       var form = $("#formNewProgram");
       form.submit(function(e) {
-        console.log("HellO")
         e.preventDefault();
-        console.log(e);
         $("#newProgram").modal('hide')
         return false;
       });
-      // console.log(this.program.name);
+    },
+    showEditProgram: function(p) {
+      this.edit.program = Object.assign({}, p);
+      $("#programEdit").modal('show');
+      console.log(p.name, p);
+    },
+    editProgram: function() {
+      console.log(this.edit.program);
+      var p = this.edit.program;
+      $.ajax({
+          url: "/api/programs/" + p.name,
+          method: "PUT",
+          data: JSON.stringify(p),
+        })
+        .then(function(ret) {
+          console.log(ret);
+          $("#programEdit").modal('hide');
+        })
+        // console.log(JSON.stringify(p));
     },
     updateBreadcrumb: function() {
       var pathname = decodeURI(location.pathname || "/");

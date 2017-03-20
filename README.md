@@ -25,7 +25,7 @@ I have been using python-supervisor for many years and there are something uncom
   * [x] Start, Stop, Tail, Reload
   * [x] Realtime log
 	* [x] Add program support
-	* [ ] Edit support
+	* [x] Edit support
 	* [x] Delete support
 	* [x] Memory and CPU monitor
 	* [ ] Path auto complete <https://github.com/twitter/typeahead.js>

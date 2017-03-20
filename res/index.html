@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>gosuv</title>
+  <title>GoSUV</title>
   <link rel="shortcut icon" type="image/png" href="/res/images/favicon.ico" />
   <link rel="stylesheet" type="text/css" href="/res/bootstrap-3.3.5/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="/res/font-awesome-4.6.3/css/font-awesome.min.css">
@@ -22,7 +22,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">Go Supervisor <small class="user">[[.User]]</small></a>
+          <a class="navbar-brand" href="/">Go Supervisor 2.0 <small class="user">[[.User]]</small></a>
         </div>
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
           <ul class="nav navbar-nav">
@@ -64,6 +64,7 @@
           <tr>
             <td>Name</td>
             <td>Status</td>
+            <td>View</td>
             <td>Command</td>
           </tr>
         </thead>
@@ -72,12 +73,6 @@
             <td v-text="p.program.name"></td>
             <td v-html="p.status | colorStatus"></td>
             <td>
-              <button v-on:click="cmdStart(p.program.name)" class="btn btn-default btn-xs" :disabled='["running", "stopping"].indexOf(p.status) != -1'>
-                <span class="glyphicon glyphicon-play"></span> Start
-              </button>
-              <button class="btn btn-default btn-xs" v-on:click="cmdStop(p.program.name)" :disabled="!canStop(p.status)">
-                <span class="glyphicon glyphicon-stop"></span> Stop
-              </button>
               <button class="btn btn-default btn-xs" v-on:click="cmdTail(p.program.name)">
                 <span class="fa fa-file-text-o"></span> Log
               </button>
@@ -87,37 +82,28 @@
               <button class="btn btn-default btn-xs" data-toggle="tooltip" title="{{p.program.command}}">
                 <span class="glyphicon glyphicon-info-sign"></span> Info
               </button>
+            </td>
+            <td>
+              <button v-on:click="cmdStart(p.program.name)" class="btn btn-default btn-xs" :disabled='["running", "stopping"].indexOf(p.status) != -1'>
+                <span class="glyphicon glyphicon-play"></span> Start
+              </button>
+              <button class="btn btn-default btn-xs" v-on:click="cmdStop(p.program.name)" :disabled="!canStop(p.status)">
+                <span class="glyphicon glyphicon-stop"></span> Stop
+              </button>
+              <button v-on:click="showEditProgram(p.program)" class="btn btn-default btn-xs">
+                <span class="glyphicon glyphicon-edit"></span> Edit
+              </button>
               <button class="btn btn-default btn-xs" v-on:click="cmdDelete(p.program.name)">
                 <span class="color-red glyphicon glyphicon-trash"></span> Delete
               </button>
             </td>
           </tr>
-          <!-- <tr class="success">
-            <td>gohttpserver</td>
-            <td>
-              <span class="status">Running(2h)</span>
-            </td>
-            <td>
-              <button class="btn btn-default btn-xs">
-                <span class="glyphicon glyphicon-play"></span> Start
-              </button>
-              <button class="btn btn-default btn-xs">
-                <span class="glyphicon glyphicon-stop"></span> Stop
-              </button>
-              <button class="btn btn-default btn-xs" disabled="true">
-                <span class="glyphicon glyphicon-minus"></span> Tail
-              </button>
-              <button class="btn btn-default btn-xs">
-                <span class="glyphicon glyphicon-cog"></span> Setting
-              </button>
-            </td>
-          </tr> -->
         </tbody>
       </table>
     </div>
     <div class="col-md-12">
       <div id="footer" class="pull-right" style="margin: 2em 1em">
-        <a href="https://github.com/codeskyblue/gosuv">gosuv ([[.Version]])</a>, written by <a href="https://github.com/codeskyblue">codeskyblue</a>. 2016. go1.7
+        <a href="https://github.com/codeskyblue/gosuv">gosuv ([[.Version]])</a>, written by <a href="https://github.com/codeskyblue">codeskyblue</a>. 2017. go1.7
       </div>
     </div>
     <!-- panels -->
@@ -166,9 +152,50 @@
             </div>
           </form>
         </div>
-        <!-- /.modal-content -->
       </div>
-      <!-- /.modal-dialog -->
+    </div>
+    <!-- model edit -->
+    <div class="modal" id="programEdit">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form v-on:submit.prevent="editProgram">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+              <h4 class="modal-title"><span class="glyphicon glyphicon-edit"></span> <span v-text="edit.program.name"></span></h4>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Command</label>
+                <input type="text" name="command" class="form-control" v-model="edit.program.command">
+              </div>
+              <div class="form-group">
+                <label>Directory</label>
+                <input type="text" name="dir" class="form-control" v-model="edit.program.directory">
+              </div>
+              <div class="form-group">
+                <label>User</label>
+                <input type="text" name="user" class="form-control" v-model="edit.program.user">
+              </div>
+              <div class="form-group">
+                <label>Fail Retries</label>
+                <input style="max-width: 5em" type="number" name="retries" class="form-control" min="0" step="1" v-model="edit.program.startRetries">
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input name="autostart" type="checkbox" v-model="edit.program.startAuto"> Auto start
+                </label>
+              </div>
+              <!-- <button type="submit" class="btn btn-Wdefault">Submit</button> -->
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
     <!-- /.modal -->
     <div class="modal" id="modalTailf">
@@ -190,15 +217,10 @@
                 </label>
               </div>
             </div>
-            <!--             <div class="modal-footer">
-            </div> -->
           </form>
         </div>
-        <!-- /.modal-content -->
       </div>
-      <!-- /.modal-dialog -->
     </div>
-    <!-- /.modal -->
   </div>
   <script src="/res/js/jquery-3.1.0.min.js"></script>
   <script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>

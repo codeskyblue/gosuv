@@ -136,6 +136,7 @@ func (s *Supervisor) addOrUpdateProgram(pg Program) error {
 			if isRunning {
 				newProc.Operate(StartEvent)
 			}
+			s.saveDB()
 		}()
 	} else {
 		s.names = append(s.names, pg.Name)
@@ -375,6 +376,32 @@ func (s *Supervisor) hAddProgram(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Write(data)
+}
+
+func (s *Supervisor) hUpdateProgram(w http.ResponseWriter, r *http.Request) {
+	// name := mux.Vars(r)["name"]
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	pg := Program{}
+	err := json.NewDecoder(r.Body).Decode(&pg)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": 1,
+			"error":  err.Error(),
+		})
+		return
+	}
+	err = s.addOrUpdateProgram(pg)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": 2,
+			"error":  err.Error(),
+		})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":      0,
+		"description": "program updated",
+	})
 }
 
 func (s *Supervisor) hDelProgram(w http.ResponseWriter, r *http.Request) {
@@ -631,6 +658,7 @@ func newSupervisorHandler() (suv *Supervisor, hdlr http.Handler, err error) {
 	r.HandleFunc("/api/programs", suv.hGetProgramList).Methods("GET")
 	r.HandleFunc("/api/programs/{name}", suv.hGetProgram).Methods("GET")
 	r.HandleFunc("/api/programs/{name}", suv.hDelProgram).Methods("DELETE")
+	r.HandleFunc("/api/programs/{name}", suv.hUpdateProgram).Methods("PUT")
 	r.HandleFunc("/api/programs", suv.hAddProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/start", suv.hStartProgram).Methods("POST")
 	r.HandleFunc("/api/programs/{name}/stop", suv.hStopProgram).Methods("POST")

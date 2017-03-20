@@ -20,6 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -159,6 +160,11 @@ func (p *Program) RunNotification() {
 	}
 }
 
+func IsRoot() bool {
+	u, err := user.Current()
+	return err == nil && u.Uid == "0"
+}
+
 type Process struct {
 	*FSM       `json:"-"`
 	Program    `json:"program"`
@@ -196,7 +202,7 @@ func (p *Process) buildCommand() *kexec.KCommand {
 	// config environ
 	cmd.Env = os.Environ() // inherit current vars
 	environ := map[string]string{}
-	if p.User != "" {
+	if p.User != "" && IsRoot() {
 		err := cmd.SetUser(p.User)
 		if err != nil {
 			log.Warnf("[%s] chusr to %s failed", p.Name, p.User)
