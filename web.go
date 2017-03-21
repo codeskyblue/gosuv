@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -32,6 +33,7 @@ func init() {
 	if defaultConfigDir == "" {
 		defaultConfigDir = filepath.Join(UserHomeDir(), ".gosuv")
 	}
+	http.Handle("/res/", http.StripPrefix("/res/", http.FileServer(Assets))) // http.StripPrefix("/res/", Assets))
 }
 
 type Supervisor struct {
@@ -233,17 +235,24 @@ type WebConfig struct {
 }
 
 func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interface{}) {
-	w.Header().Set("Content-Type", "text/html")
-	wc := WebConfig{}
-	wc.Version = Version
-	user, err := user.Current()
-	if err == nil {
-		wc.User = user.Username
+	file, err := Assets.Open(name + ".html")
+	if err != nil {
+		panic(err)
 	}
+	defer file.Close()
+	body, _ := ioutil.ReadAll(file)
+
 	if data == nil {
+		wc := WebConfig{}
+		wc.Version = Version
+		user, err := user.Current()
+		if err == nil {
+			wc.User = user.Username
+		}
 		data = wc
 	}
-	executeTemplate(w, name, data)
+	w.Header().Set("Content-Type", "text/html")
+	template.Must(template.New("t").Delims("[[", "]]").Parse(string(body))).Execute(w, data)
 }
 
 type JSONResponse struct {

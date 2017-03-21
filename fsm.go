@@ -162,7 +162,7 @@ func (p *Program) RunNotification() {
 
 func IsRoot() bool {
 	u, err := user.Current()
-	return err == nil && u.Uid == "0"
+	return err == nil && u.Username == "root"
 }
 
 type Process struct {
@@ -202,10 +202,11 @@ func (p *Process) buildCommand() *kexec.KCommand {
 	// config environ
 	cmd.Env = os.Environ() // inherit current vars
 	environ := map[string]string{}
-	if p.User != "" && IsRoot() {
-		err := cmd.SetUser(p.User)
-		if err != nil {
-			log.Warnf("[%s] chusr to %s failed", p.Name, p.User)
+	if p.User != "" {
+		if !IsRoot() {
+			log.Warnf("detect not root, can not switch user")
+		} else if err := cmd.SetUser(p.User); err != nil {
+			log.Warnf("[%s] chusr to %s failed, %v", p.Name, p.User, err)
 		} else {
 			var homeDir string
 			switch runtime.GOOS {

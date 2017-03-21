@@ -26,7 +26,7 @@ func parseTemplate(name string, content string) {
 }
 
 func init() {
-	http.Handle("/res/", http.StripPrefix("/res/", http.FileServer(assetFS())))
+	http.Handle("/res/", http.StripPrefix("/res/", Assets))
 }
 
 func executeTemplate(wr io.Writer, name string, data interface{}) {

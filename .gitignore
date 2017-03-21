@@ -26,3 +26,4 @@ _testmain.go
 output/
 gosuv
 bindata_assetfs.go
+assets_vfsdata.go

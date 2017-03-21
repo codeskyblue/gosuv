@@ -6,12 +6,9 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_6219389dc5b7_key -iv $encrypted_6219389dc5b7_iv
   -in equinox.key.enc -out equinox.key -d
 before_script:
-- go get -v github.com/jteeuwen/go-bindata/...
-- go get -v github.com/elazarl/go-bindata-assetfs/...
-- go-bindata-assetfs -tags bindata res/...
+- go get -v github.com/shurcooL/vfsgen
 script:
 - go test -v
-- go test -v -tags bindata
 before_deploy: |
   if [ ! -z "$TRAVIS_TAG" ]; then
     go get -v github.com/gobuild/gopack
