@@ -18,4 +18,4 @@ echo "VER: $VER"
         --platforms="darwin_amd64 linux_amd64 linux_arm" \
         --signing-key="equinox.key" \
         --token="$EQUINOX_API_TOKEN" \
-        -- -tags bindata -ldflags "-X main.Version=$VER"
+        -- -tags vfs -ldflags "-X main.Version=$VER"

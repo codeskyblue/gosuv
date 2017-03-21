@@ -44,7 +44,6 @@ Standalone binary can be download from one of the following addresses
 | Branch | Source | Address |
 |--------|--------|---------|
 | latest | equinox| <https://dl.equinox.io/shengxiang/gosuv/stable> |
-| stable | github | <https://github.com/codeskyblue/gosuv/releases/latest>|
 
 Or if you have go enviroment, you can also build from source.
 
@@ -57,9 +56,8 @@ go build
 If you want to build a standalone binary, run the following command.
 
 ```sh
-go get github.com/elazarl/go-bindata-assetfs/...
-go-bindata-assetfs -tags bindata res/...
-go build -tags bindata
+go generate
+go build -tags vfs
 ```
 
 ## Quick start
