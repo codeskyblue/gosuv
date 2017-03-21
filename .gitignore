@@ -23,6 +23,7 @@ _testmain.go
 *.test
 *.prof
 
+dist/
 output/
 gosuv
 bindata_assetfs.go

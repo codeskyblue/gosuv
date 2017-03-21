@@ -24,6 +24,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/qiniu/log"
+	_ "github.com/shurcooL/vfsgen"
 )
 
 var defaultConfigDir string

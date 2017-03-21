@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/codeskyblue/gosuv",
-	"GoVersion": "go1.6",
-	"GodepVersion": "v74",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v79",
 	"Deps": [
 		{
 			"ImportPath": "github.com/codeskyblue/kexec",
@@ -44,16 +44,14 @@
 			"Rev": "2da839ab0f4df05a6db5eb277995589dadbd4fb9"
 		},
 		{
-			"ImportPath": "github.com/gorilla/context",
-			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
-		},
-		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "ee1815431e497d3850809578c93ab6705f1a19f7"
+			"Comment": "v1.3.0-1-g94e7d24",
+			"Rev": "94e7d24fd285520f3d12ae998f7fdd6b5393d453"
 		},
 		{
 			"ImportPath": "github.com/gorilla/websocket",
-			"Rev": "b6ab76f1fe9803ee1d59e7e5b2a797c1fe897ce5"
+			"Comment": "v1.1.0-24-g3f3e394",
+			"Rev": "3f3e394da2b801fbe732a935ef40724762a67a07"
 		},
 		{
 			"ImportPath": "github.com/jtolds/gls",
@@ -71,6 +69,14 @@
 			"ImportPath": "github.com/qiniu/log",
 			"Comment": "v1.0.00-2-ge002bc2",
 			"Rev": "e002bc2020b19bfa61ed378cc5407383dbd2f346"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/httpfs/vfsutil",
+			"Rev": "df3d5d88c59699064c4449a2d4e3db0f07e74ed9"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/vfsgen",
+			"Rev": "8bd98c96e6f6800019cdcd1183547b1c8e89d280"
 		},
 		{
 			"ImportPath": "github.com/smartystreets/assertions",
@@ -104,11 +110,15 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/html",
-			"Rev": "075e191f18186a8ff2becaf64478e30f4545cdad"
+			"Rev": "6b27048ae5e6ad1ef927e72e437531493de612fe"
 		},
 		{
 			"ImportPath": "golang.org/x/net/html/atom",
-			"Rev": "075e191f18186a8ff2becaf64478e30f4545cdad"
+			"Rev": "6b27048ae5e6ad1ef927e72e437531493de612fe"
+		},
+		{
+			"ImportPath": "golang.org/x/tools/godoc/vfs",
+			"Rev": "513c731aab546b4628168d772550499740fe9dd2"
 		}
 	]
 }
