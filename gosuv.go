@@ -203,6 +203,14 @@ func actionUpdateSelf(c *cli.Context) error {
 	return equinoxUpdate(c.String("channel"), c.Bool("yes"))
 }
 
+func actionEdit(c *cli.Context) error {
+	cmd := exec.Command("vim", filepath.Join(os.Getenv("HOME"), ".gosuv/programs.yml"))
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 func actionVersion(c *cli.Context) error {
 	fmt.Printf("gosuv version %s\n", Version)
 	return nil
@@ -297,6 +305,11 @@ func main() {
 				},
 			},
 			Action: actionUpdateSelf,
+		},
+		{
+			Name:   "edit",
+			Usage:  "Edit config file",
+			Action: actionEdit,
 		},
 		{
 			Name:    "version",
