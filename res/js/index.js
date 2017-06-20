@@ -1,6 +1,5 @@
 /* index.js */
 var W = {};
-
 var testPrograms = [{
   program: {
     name: "gggg",
@@ -36,12 +35,10 @@ var vm = new Vue({
       });
     },
     showEditProgram: function(p) {
-      this.edit.program = Object.assign({}, p);
+      this.edit.program = Object.assign({}, p); // here require polyfill.min.js
       $("#programEdit").modal('show');
-      console.log(p.name, p);
     },
     editProgram: function() {
-      console.log(this.edit.program);
       var p = this.edit.program;
       $.ajax({
           url: "/api/programs/" + p.name,
@@ -199,7 +196,6 @@ Vue.filter('colorStatus', function(value) {
     default:
       return makeColorText(value, "gray");
   }
-  return value;
 })
 
 Vue.directive('disable', function(value) {
@@ -229,9 +225,6 @@ $(function() {
     })
     e.preventDefault()
   });
-
-
-  console.log("HEE")
 
   function newEventWatcher() {
     W.events = newWebsocket("/ws/events", {
