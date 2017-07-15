@@ -67,11 +67,16 @@ After you installed gosuv, the first thing is to start server.
 gosuv start-server
 ```
 
-Show server status
+Basic operations
 
 ```sh
 $ gosuv status
-Server is running
+PROGRAM NAME            STATUS
+test                    running
+test_again              stopped
+
+$ gosuv stop test
+$ gosuv start test
 ```
 
 Open web <http://localhost:11313> to see the manager page. And follow the gif to add a program to gosuv.

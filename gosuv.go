@@ -142,6 +142,16 @@ func main() {
 			Action:  actionStatus,
 		},
 		{
+			Name:   "start",
+			Usage:  "Start program",
+			Action: actionStart,
+		},
+		{
+			Name:   "stop",
+			Usage:  "Stop program",
+			Action: actionStop,
+		},
+		{
 			Name:   "reload",
 			Usage:  "Reload config file",
 			Action: actionReload,

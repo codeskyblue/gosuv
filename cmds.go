@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/franela/goreq"
 	"github.com/goji/httpauth"
 	"github.com/urfave/cli"
 )
@@ -83,11 +84,68 @@ func actionStartServer(c *cli.Context) error {
 }
 
 func actionStatus(c *cli.Context) error {
-	err := checkServerStatus()
+	res, err := goreq.Request{
+		Uri: cfg.Client.ServerURL + "/api/programs",
+	}.Do()
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	var programs = make([]struct {
+		Program Program `json:"program"`
+		Status  string  `json:"status"`
+	}, 0)
+	if err := res.Body.FromJsonTo(&programs); err != nil {
+		return err
+	}
+	format := "%-23s\t%-8s\n"
+	fmt.Printf(format, "PROGRAM NAME", "STATUS")
+	for _, p := range programs {
+		fmt.Printf(format, p.Program.Name, p.Status)
+	}
+	return nil
+}
+
+// cmd: <start|stop>
+func programOperate(cmd, name string) (err error, success bool) {
+	res, err := goreq.Request{
+		Method: "POST",
+		Uri:    cfg.Client.ServerURL + "/api/programs/" + name + "/" + cmd,
+	}.Do()
+	if err != nil {
+		return
+	}
+	var v = struct {
+		Status int `json:"status"`
+	}{}
+	if err = res.Body.FromJsonTo(&v); err != nil {
+		return
+	}
+	success = v.Status == 0
+	return
+}
+
+func actionStart(c *cli.Context) (err error) {
+	name := c.Args().First()
+	err, success := programOperate("start", name)
+	if err != nil {
+		return
+	}
+	if success {
+		fmt.Println("Started")
 	} else {
-		log.Println("Server is running, OK.")
+		fmt.Println("Start failed")
+	}
+	return nil
+}
+
+func actionStop(c *cli.Context) (err error) {
+	name := c.Args().First()
+	err, success := programOperate("stop", name)
+	if err != nil {
+		return
+	}
+	if !success {
+		fmt.Println("Stop failed")
 	}
 	return nil
 }

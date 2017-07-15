@@ -3,6 +3,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,6 +24,18 @@ func watchChildSignal() {
 }
 
 func reapChildren() {
-	var wstatus syscall.WaitStatus
-	syscall.Wait4(-1, &wstatus, syscall.WNOHANG, nil)
+	for {
+		var wstatus syscall.WaitStatus
+		wpid, err := syscall.Wait4(-1, &wstatus, syscall.WNOHANG, nil)
+		if err != nil {
+			log.Printf("syscall.Wait4 call failed: %v", err)
+			break
+		}
+
+		if wpid != 0 {
+			log.Printf("reap dead child: %d, wstatus: %#08x", wpid, wstatus)
+		} else {
+			break
+		}
+	}
 }
