@@ -1,0 +1,70 @@
+hash: ad7063d34838040bf683183342f3814298179801e2e055f29bca796456c88300
+updated: 2017-08-11T19:08:31.193345249+08:00
+imports:
+- name: github.com/codeskyblue/kexec
+  version: 863094f94c7fb7c235764bf8f0f79cccea78c8eb
+- name: github.com/equinox-io/equinox
+  version: 6f97d0d3970881d3e53dd6f547a41109eb055e54
+  subpackages:
+  - internal/go-update
+  - internal/go-update/internal/binarydist
+  - internal/go-update/internal/osext
+  - internal/osext
+  - proto
+- name: github.com/franela/goreq
+  version: b5b0f5eb2d16f20345cce0a544a75163579c0b00
+- name: github.com/glycerine/rbuf
+  version: 96ad00d7fa74f7dd9857f2b6068451062b4ebc5d
+- name: github.com/go-yaml/yaml
+  version: 25c4ec802a7d637f88d584ab26798e94ad14c13b
+- name: github.com/goji/httpauth
+  version: 2da839ab0f4df05a6db5eb277995589dadbd4fb9
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: ac112f7d75a0714af1bd86ab17749b31f7809640
+- name: github.com/gorilla/websocket
+  version: a69d9f6de432e2c6b296a947d8a5ee88f68522cf
+- name: github.com/kennygrant/sanitize
+  version: 6a0bfdde8629a3a3a7418a7eae45c54154692514
+- name: github.com/mitchellh/go-ps
+  version: 4fdf99ab29366514c69ccccddab5dc58b8d84062
+- name: github.com/qiniu/log
+  version: a304a74568d6982c5b89de1c68ac8fca3add196a
+- name: github.com/shurcooL/httpfs
+  version: bc35257962c2dea93e81c976b72c7c6eac45fd8a
+  subpackages:
+  - vfsutil
+- name: github.com/shurcooL/vfsgen
+  version: 385e5833a54aaba5860ca26036b8e8b72135ab96
+- name: github.com/urfave/cli
+  version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
+- name: golang.org/x/net
+  version: 1c05540f6879653db88113bc4a2b70aec4bd491f
+  subpackages:
+  - html
+  - html/atom
+- name: golang.org/x/tools
+  version: 5831d16d18029819d39f99bdc2060b8eff410b6b
+  subpackages:
+  - godoc/vfs
+testImports:
+- name: github.com/gopherjs/gopherjs
+  version: 2b1d432c8a82c9bff0b0baffaeb3ec6e92974112
+  subpackages:
+  - js
+- name: github.com/jtolds/gls
+  version: 77f18212c9c7edc9bd6a33d383a7b545ce62f064
+- name: github.com/smartystreets/assertions
+  version: 1540c14c9f1bd1abeba90f29762a4c6e50582303
+  subpackages:
+  - internal/go-render/render
+  - internal/oglematchers
+- name: github.com/smartystreets/goconvey
+  version: 9e8dc3f972df6c8fcc0375ef492c24d0bb204857
+  subpackages:
+  - convey
+  - convey/gotest
+  - convey/reporting
+- name: github.com/smartystreets/logging
+  version: ac3a674540761aa0b4382094ba4795f917e85c7f

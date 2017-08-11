@@ -16,7 +16,7 @@ import (
 var (
 	ignoreTags = []string{"title", "script", "style", "iframe", "frame", "frameset", "noframes", "noembed", "embed", "applet", "object", "base"}
 
-	defaultTags = []string{"h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "hr", "p", "br", "b", "i", "strong", "em", "ol", "ul", "li", "a", "img"}
+	defaultTags = []string{"h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "hr", "p", "br", "b", "i", "strong", "em", "ol", "ul", "li", "a", "img", "pre", "code", "blockquote"}
 
 	defaultAttributes = []string{"id", "class", "src", "href", "title", "alt", "name", "rel"}
 )
@@ -99,9 +99,7 @@ func HTMLAllowing(s string, args ...[]string) (string, error) {
 
 // HTML strips html tags, replace common entities, and escapes <>&;'" in the result.
 // Note the returned text may contain entities as it is escaped by HTMLEscapeString, and most entities are not translated.
-func HTML(s string) string {
-
-	output := ""
+func HTML(s string) (output string) {
 
 	// Shortcut strings with no tags in them
 	if !strings.ContainsAny(s, "<>") {
@@ -109,7 +107,7 @@ func HTML(s string) string {
 	} else {
 
 		// First remove line breaks etc as these have no meaning outside html tags (except pre)
-		// this means pre sections will lose formatting... but will result in less uninentional paras.
+		// this means pre sections will lose formatting... but will result in less unintentional paras.
 		s = strings.Replace(s, "\n", "", -1)
 
 		// Then replace line breaks with newlines, to preserve that formatting
@@ -117,6 +115,7 @@ func HTML(s string) string {
 		s = strings.Replace(s, "<br>", "\n", -1)
 		s = strings.Replace(s, "</br>", "\n", -1)
 		s = strings.Replace(s, "<br/>", "\n", -1)
+		s = strings.Replace(s, "<br />", "\n", -1)
 
 		// Walk through the string removing all tags
 		b := bytes.NewBufferString("")

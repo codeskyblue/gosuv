@@ -1,0 +1,19 @@
+package: github.com/codeskyblue/gosuv
+import:
+- package: github.com/codeskyblue/kexec
+- package: github.com/equinox-io/equinox
+- package: github.com/franela/goreq
+- package: github.com/glycerine/rbuf
+- package: github.com/go-yaml/yaml
+- package: github.com/goji/httpauth
+- package: github.com/gorilla/mux
+- package: github.com/gorilla/websocket
+- package: github.com/kennygrant/sanitize
+- package: github.com/mitchellh/go-ps
+- package: github.com/qiniu/log
+- package: github.com/shurcooL/vfsgen
+- package: github.com/urfave/cli
+testImport:
+- package: github.com/smartystreets/goconvey
+  subpackages:
+  - convey
