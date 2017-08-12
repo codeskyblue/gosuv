@@ -39,24 +39,16 @@ I have been using python-supervisor for many years and there are something uncom
 Go version at least `1.6+`
 
 ## Installation
-Standalone binary can be download from one of the following addresses
+### Binaries
+<https://github.com/codeskyblue/gosuv/releases>
 
-| Branch | Source | Address |
-|--------|--------|---------|
-| latest | equinox| <https://dl.equinox.io/shengxiang/gosuv/stable> |
+Thanks to [goreleaser](https://github.com/goreleaser/goreleaser) which makes publish binary automatic.
 
-Or if you have go enviroment, you can also build from source.
-
+### Build from source
 ```sh
 go get -d github.com/codeskyblue/gosuv
 cd $GOPATH/src/github.com/codeskyblue/gosuv
-go build
-```
-
-If you want to build a standalone binary, run the following command.
-
-```sh
-go generate
+go generate # package html resources into go
 go build -tags vfs
 ```
 

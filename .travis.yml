@@ -8,4 +8,3 @@ script:
 - go test -v
 after_success:
   - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
-  - test -z "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash -s -- --snapshot
