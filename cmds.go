@@ -176,7 +176,7 @@ func actionEdit(c *cli.Context) error {
 }
 
 func actionVersion(c *cli.Context) error {
-	fmt.Printf("gosuv version %s\n", Version)
+	fmt.Printf("gosuv version %s\n", version)
 	return nil
 }
 

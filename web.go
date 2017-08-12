@@ -245,7 +245,7 @@ func (s *Supervisor) renderHTML(w http.ResponseWriter, name string, data interfa
 
 	if data == nil {
 		wc := WebConfig{}
-		wc.Version = Version
+		wc.Version = version
 		user, err := user.Current()
 		if err == nil {
 			wc.User = user.Username

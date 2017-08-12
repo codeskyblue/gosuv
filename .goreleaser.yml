@@ -1,0 +1,5 @@
+builds:
+  -
+    flags: -tags vfs
+    hooks:
+      pre: go generate
