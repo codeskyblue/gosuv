@@ -1,5 +1,18 @@
 builds:
   -
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm
+    goarm:
+      - 6
+      - 7
+    ignore:
+      - goos: darwin
+        goarch: arm
     flags: -tags vfs
     hooks:
       pre: go generate

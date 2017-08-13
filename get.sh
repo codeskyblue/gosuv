@@ -150,6 +150,7 @@ uname_arch_check() {
     armv5) return 0 ;;
     armv6) return 0 ;;
     armv7) return 0 ;;
+    armv7l) arch="armv7"; return 0 ;;
     ppc64) return 0 ;;
     ppc64le) return 0 ;;
     mips) return 0 ;;
