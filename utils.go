@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/qiniu/log"
@@ -70,11 +71,12 @@ func UserHomeDir() string {
 // confirmations. If the input is not recognized, it will ask again. The function does not return
 // until it gets a valid response from the user. Typically, you should use fmt to print out a question
 // before calling askForConfirmation. E.g. fmt.Println("WARNING: Are you sure? (yes/no)")
-func askForConfirmation() bool {
+func askForConfirmation(prompt string, _default bool) bool {
 	var response string
+	fmt.Print(prompt)
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		log.Fatal(err)
+		return _default
 	}
 	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
 	nokayResponses := []string{"n", "N", "no", "No", "NO"}
@@ -83,8 +85,7 @@ func askForConfirmation() bool {
 	} else if containsString(nokayResponses, response) {
 		return false
 	} else {
-		fmt.Println("Please type yes or no and then press enter:")
-		return askForConfirmation()
+		return askForConfirmation(prompt, _default)
 	}
 }
 
@@ -104,4 +105,11 @@ func posString(slice []string, element string) int {
 // containsString returns true iff slice contains element
 func containsString(slice []string, element string) bool {
 	return !(posString(slice, element) == -1)
+}
+
+func StringFormat(format string, m map[string]interface{}) string {
+	for k, v := range m {
+		format = strings.Replace(format, "{"+k+"}", fmt.Sprintf("%v", v), -1)
+	}
+	return format
 }

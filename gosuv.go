@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
-	"github.com/equinox-io/equinox"
+	"github.com/franela/goreq"
 	"github.com/qiniu/log"
 	"github.com/urfave/cli"
 )
@@ -17,54 +19,72 @@ import (
 const appID = "app_8Gji4eEAdDx"
 
 var (
-	version   string = "master"
-	publicKey        = []byte(`
------BEGIN ECDSA PUBLIC KEY-----
-MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEY8xsSkcFs8XXUicw3n7E77qN/vqKUQ/6
-/X5aBiOVF1yTIRYRXrV3aEvJRzErvQxziT9cLxQq+BFUZqn9pISnPSf9dn0wf9kU
-TxI79zIvne9UT/rDsM0BxSydwtjG00MT
------END ECDSA PUBLIC KEY-----
-`)
-	cfg Configuration
+	version string = "master"
+	cfg     Configuration
 )
 
-func equinoxUpdate(channel string, skipConfirm bool) error {
-	var opts equinox.Options
-	if err := opts.SetPublicKeyPEM(publicKey); err != nil {
-		return err
-	}
-	opts.Channel = channel
+type TagInfo struct {
+	Version   string `json:"tag_name"`
+	Body      string `json:"body"`
+	CreatedAt string `json:"created_at"`
+}
 
-	// check for the update
-	resp, err := equinox.Check(appID, opts)
-	switch {
-	case err == equinox.NotAvailableErr:
-		fmt.Println("No update available, already at the latest version!")
-		return nil
-	case err != nil:
+func githubLatestVersion(repo, name string) (tag TagInfo, err error) {
+	githubURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", repo, name)
+	req := goreq.Request{Uri: githubURL}
+	ghToken := os.Getenv("GITHUB_TOKEN")
+	if ghToken != "" {
+		req.AddHeader("Authorization", "token "+ghToken)
+	}
+	res, err := req.Do()
+	if err != nil {
+		return
+	}
+	err = res.Body.FromJsonTo(&tag)
+	return
+}
+
+func githubUpdate(skipConfirm bool) error {
+	repo, name := "codeskyblue", "gosuv"
+	tag, err := githubLatestVersion(repo, name)
+	if err != nil {
 		fmt.Println("Update failed:", err)
 		return err
 	}
+	if tag.Version == version {
+		fmt.Println("No update available, already at the latest version!")
+		return nil
+	}
 
-	fmt.Println("New version available!")
-	fmt.Println("Version:", resp.ReleaseVersion)
-	fmt.Println("Name:", resp.ReleaseTitle)
-	fmt.Println("Details:", resp.ReleaseDescription)
+	fmt.Println("New version available -- ", tag.Version)
+	fmt.Print(tag.Body)
 
 	if !skipConfirm {
-		fmt.Printf("Would you like to update [y/n]? ")
-		if !askForConfirmation() {
+		if !askForConfirmation("Would you like to update [Y/n]? ", true) {
 			return nil
 		}
 	}
-	//fmt.Printf("New version available: %s downloading ... \n", resp.ReleaseVersion)
-	// fetch the update and apply it
-	err = resp.Apply()
-	if err != nil {
-		return err
+	fmt.Printf("New version available: %s downloading ... \n", tag.Version)
+	// // fetch the update and apply it
+	// err = resp.Apply()
+	// if err != nil {
+	// 	return err
+	// }
+	cleanVersion := tag.Version
+	if strings.HasPrefix(cleanVersion, "v") {
+		cleanVersion = cleanVersion[1:]
 	}
+	osArch := runtime.GOOS + "_" + runtime.GOARCH
 
-	fmt.Printf("Updated to new version: %s!\n", resp.ReleaseVersion)
+	downloadURL := StringFormat("https://github.com/{repo}/{name}/releases/download/{tag}/{name}_{version}_{os_arch}.tar.gz", map[string]interface{}{
+		"repo":    "codeskyblue",
+		"name":    "gosuv",
+		"tag":     tag.Version,
+		"version": cleanVersion,
+		"os_arch": osArch,
+	})
+	fmt.Println("Not finished yet. download from:", downloadURL)
+	// fmt.Printf("Updated to new version: %s!\n", tag.Version)
 	return nil
 }
 

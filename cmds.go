@@ -164,7 +164,7 @@ func actionShutdown(c *cli.Context) error {
 }
 
 func actionUpdateSelf(c *cli.Context) error {
-	return equinoxUpdate(c.String("channel"), c.Bool("yes"))
+	return githubUpdate(c.Bool("yes"))
 }
 
 func actionEdit(c *cli.Context) error {
