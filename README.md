@@ -40,9 +40,17 @@ Go version at least `1.6+`
 
 ## Installation
 ### Binaries
+The fastest way is run with. Default install location is `/usr/local/bin`
+
+```
+curl https://raw.githubusercontent.com/codeskyblue/gosuv/master/get.sh | bash
+```
+
+Or just download binaries
+
 <https://github.com/codeskyblue/gosuv/releases>
 
-Thanks to [goreleaser](https://github.com/goreleaser/goreleaser) which makes publish binary automatic.
+Thanks to [goreleaser](https://github.com/goreleaser/goreleaser) which makes publish binaries automaticly.
 
 ### Build from source
 ```sh
