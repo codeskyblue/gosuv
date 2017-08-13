@@ -9,7 +9,7 @@ usage() {
 $this: download go binaries for codeskyblue/gosuv
 
 Usage: $this [-b] bindir [version]
-  -b sets bindir or installation directory, default "./bin"
+  -b sets bindir or installation directory, default "/usr/local/bin"
    [version] is a version number from
    https://github.com/codeskyblue/gosuv/releases
    If version is missing, then an attempt to find the latest will be found.
@@ -25,7 +25,7 @@ parse_args() {
   #BINDIR is /usr/local/bin unless set be ENV
   # over-ridden by flag below
 
-  BINDIR=${BINDIR:-"/usr/local/bin"}
+  BINDIR=${BINDIR:-/usr/local/bin}
   while getopts "b:h?" arg; do
     case "$arg" in
       b) BINDIR="$OPTARG" ;;
@@ -58,9 +58,20 @@ is_supported_platform() {
   found=1
   case "$platform" in
     linux/amd64) found=0 ;;
-    linux/386) found=0 ;;
+
     darwin/amd64) found=0 ;;
-    darwin/386) found=0 ;;
+
+    windows/amd64) found=0 ;;
+
+    linux/armv6) found=0 ;;
+    linux/armv7) found=0 ;;
+    darwin/armv6) found=0 ;;
+    darwin/armv7) found=0 ;;
+    windows/armv6) found=0 ;;
+    windows/armv7) found=0 ;;
+  esac
+  case "$platform" in
+    darwin/arm) found=1 ;;
   esac
   return $found
 }
@@ -117,9 +128,9 @@ uname_arch() {
     i686) arch="386" ;;
     i386) arch="386" ;;
     aarch64) arch="arm64" ;;
-    armv5*) arch="arm5" ;;
-    armv6*) arch="arm6" ;;
-    armv7*) arch="arm7" ;;
+    armv5*) arch="armv5" ;;
+    armv6*) arch="armv6" ;;
+    armv7*) arch="armv7" ;;
   esac
   echo ${arch}
 }
@@ -150,7 +161,6 @@ uname_arch_check() {
     armv5) return 0 ;;
     armv6) return 0 ;;
     armv7) return 0 ;;
-    armv7l) arch="armv7"; return 0 ;;
     ppc64) return 0 ;;
     ppc64le) return 0 ;;
     mips) return 0 ;;
@@ -294,11 +304,11 @@ adjust_arch
 
 echo "$PREFIX: found version ${VERSION} for ${OS}/${ARCH}"
 
-NAME=${BINARY}_${VERSION}_${OS}_${ARCH}
+NAME=${BINARY}_${VERSION#v}_${OS}_${ARCH}
 TARBALL=${NAME}.${FORMAT}
-TARBALL_URL=${GITHUB_DOWNLOAD}/v${VERSION}/${TARBALL}
+TARBALL_URL=${GITHUB_DOWNLOAD}/${VERSION}/${TARBALL}
 CHECKSUM=${BINARY}_checksums.txt
-CHECKSUM_URL=${GITHUB_DOWNLOAD}/v${VERSION}/${CHECKSUM}
+CHECKSUM_URL=${GITHUB_DOWNLOAD}/${VERSION}/${CHECKSUM}
 
 # Adjust binary name if windows
 if [ "$OS" = "windows" ]; then

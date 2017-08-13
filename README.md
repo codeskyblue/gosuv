@@ -40,7 +40,7 @@ Go version at least `1.6+`
 
 ## Installation
 ### Binaries
-The fastest way is run with. Default install location is `/usr/local/bin`
+The fastest way is run with. Default install location is `/usr/local/bin`, change env-var `BINDIR` will also change install location.
 
 ```
 curl https://raw.githubusercontent.com/codeskyblue/gosuv/master/get.sh | bash
