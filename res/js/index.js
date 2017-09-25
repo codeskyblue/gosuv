@@ -211,8 +211,6 @@ $(function() {
       name = $(this).find("[name=name]").val(),
       disablechars = "./\\";
 
-
-    console.log(name)
     if (!name) {
         alert("\"" + name + "\" is empty ")
         return false
