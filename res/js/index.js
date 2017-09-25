@@ -207,7 +207,18 @@ $(function() {
 
   $("#formNewProgram").submit(function(e) {
     var url = "/api/programs",
-      data = $(this).serialize();
+      data = $(this).serialize(),
+      name = $(this).find("[name=name]").val(),
+      disablechars = "./\\";
+
+    if (!name) {
+        alert("\"" + name + "\" is empty ")
+        return false
+    }
+    if (disablechars.indexOf(name[0]) != -1) {
+        alert("\"" + name + "\" Can't starts with \".\" \"/\" \"\\\"")
+        return false
+    }
     $.ajax({
       type: "POST",
       url: url,
