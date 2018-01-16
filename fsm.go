@@ -23,16 +23,17 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/codeskyblue/gosuv/pushover"
-	"github.com/codeskyblue/kexec"
 	"github.com/kennygrant/sanitize"
 	"github.com/lunny/dingtalk_webhook"
 	"github.com/qiniu/log"
+	"github.com/soopsio/gosuv/pushover"
+	"github.com/soopsio/kexec"
 )
 
 type FSMState string
@@ -106,14 +107,15 @@ var (
 )
 
 type Program struct {
-	Name          string        `yaml:"name" json:"name"`
-	Command       string        `yaml:"command" json:"command"`
-	Environ       []string      `yaml:"environ" json:"environ"`
-	Dir           string        `yaml:"directory" json:"directory"`
-	StartAuto     bool          `yaml:"start_auto" json:"startAuto"`
-	StartRetries  int           `yaml:"start_retries" json:"startRetries"`
-	StartSeconds  int           `yaml:"start_seconds,omitempty" json:"startSeconds"`
-	StopTimeout   int           `yaml:"stop_timeout,omitempty" json:"stopTimeout"`
+	Name          string   `yaml:"name" json:"name"`
+	Command       string   `yaml:"command" json:"command"`
+	Environ       []string `yaml:"environ" json:"environ"`
+	Dir           string   `yaml:"directory" json:"directory"`
+	StartAuto     bool     `yaml:"start_auto" json:"startAuto"`
+	StartRetries  int      `yaml:"start_retries" json:"startRetries"`
+	StartSeconds  int      `yaml:"start_seconds,omitempty" json:"startSeconds"`
+	StopTimeout   int      `yaml:"stop_timeout,omitempty" json:"stopTimeout"`
+	retryCount    int
 	User          string        `yaml:"user,omitempty" json:"user"`
 	Notifications Notifications `yaml:"notifications,omitempty" json:"-"`
 	WebHook       WebHook       `yaml:"webhook,omitempty" json:"-"`
@@ -165,9 +167,12 @@ func (p *Program) RunNotification(state FSMState) {
 	} else {
 		host, _ = os.Hostname()
 	}
+	msg := fmt.Sprintf("[%s] %s: \"%s\" changed: \"%s\"", t, host, p.Name, state)
+	if state == RetryWait {
+		msg += " retryCount:" + strconv.Itoa(p.retryCount)
+	}
 	for _, noti := range notis {
 		po := noti.Pushover
-		msg := fmt.Sprintf("[%s] %s: %s changed: %s", t, host, p.Name, state)
 		if po.ApiKey != "" && len(po.Users) > 0 {
 			for _, user := range po.Users {
 				err := pushover.Notify(pushover.Params{
@@ -288,16 +293,20 @@ func (p *Process) waitNextRetry() {
 }
 
 func (p *Process) stopCommand() {
+	fmt.Println("stop 111", p)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	defer p.SetState(Stopped)
 	if p.cmd == nil {
 		return
 	}
+	fmt.Println("stop 222", p)
+
 	p.SetState(Stopping)
 	if p.cmd.Process != nil {
 		p.cmd.Process.Signal(syscall.SIGTERM) // TODO(ssx): add it to config
 	}
+	fmt.Println("stop 333", p)
 	select {
 	case <-GoFunc(p.cmd.Wait):
 		p.RunNotification(FSMState("quit normally"))
@@ -307,7 +316,9 @@ func (p *Process) stopCommand() {
 		log.Printf("program(%s) terminate all", p.Name)
 		p.cmd.Terminate(syscall.SIGKILL) // cleanup
 	}
+	fmt.Println("stop 444", p)
 	err := p.cmd.Wait() // This is OK, because Signal KILL will definitely work
+	fmt.Println("stop 555", p)
 	prefixStr := "\n--- GOSUV LOG " + time.Now().Format("2006-01-02 15:04:05")
 	if err == nil {
 		io.WriteString(p.cmd.Stderr, fmt.Sprintf("%s exit success ---\n\n", prefixStr))
@@ -338,9 +349,13 @@ func (p *Process) startCommand() {
 		p.SetState(Fatal)
 		return
 	}
+	// 如果是running状态，重置 retryLeft
+	p.retryLeft = p.StartRetries
 	go func() {
+		log.Println("开始运行 1111")
 		errC := GoFunc(p.cmd.Wait)
 		startTime := time.Now()
+		log.Println("开始运行 2222")
 		select {
 		case <-errC:
 			// if p.cmd.Wait() returns, it means program and its sub process all quited. no need to kill again
@@ -349,6 +364,7 @@ func (p *Process) startCommand() {
 			if time.Since(startTime) < time.Duration(p.StartSeconds)*time.Second {
 				if p.retryLeft == p.StartRetries { // If first time quit so fast, just set to fatal
 					p.SetState(Fatal)
+					p.RunNotification(Fatal)
 					log.Printf("program(%s) exit too quick, status -> fatal", p.Name)
 					return
 				}
@@ -358,6 +374,7 @@ func (p *Process) startCommand() {
 			log.Println("recv stop command")
 			p.stopCommand() // clean up all process
 		}
+		log.Println("开始运行 3333")
 	}()
 }
 
@@ -377,6 +394,9 @@ func NewProcess(pg Program) *Process {
 		pr.Status = string(newStatus)
 		// TODO: status need to filter with config, not hard coded.
 		// if newStatus == Fatal {
+		if newStatus == RetryWait {
+			pr.Program.retryCount++
+		}
 		go pr.Program.RunNotification(newStatus)
 		// }
 	}

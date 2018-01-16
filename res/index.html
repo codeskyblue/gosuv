@@ -2,251 +2,308 @@
 <html>
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>GoSUV</title>
-  <link rel="shortcut icon" type="image/png" href="/res/images/favicon.ico" />
-  <link rel="stylesheet" type="text/css" href="/res/bootstrap-3.3.5/css/bootstrap.min.css">
-  <link rel="stylesheet" type="text/css" href="/res/font-awesome-4.6.3/css/font-awesome.min.css">
-  <link rel="stylesheet" type="text/css" href="/res/css/style.css">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Distributed Go Supervisor 1.0</title>
+    <link rel="shortcut icon" type="image/png" href="/res/images/favicon.ico"/>
+    <link rel="stylesheet" type="text/css" href="/res/bootstrap-3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/res/font-awesome-4.6.3/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/res/css/style.css">
 </head>
 
 <body id="app">
-  <nav class="navbar navbar-inverse">
+<nav class="navbar navbar-inverse">
     <div class="container">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">Go Supervisor 2.0 <small class="user">[[.User]]</small></a>
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                        data-target="#bs-example-navbar-collapse-2">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">Distributed Go Supervisor 1.0
+                    <small class="user">[[.User]]</small>
+                </a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
+                <ul class="nav navbar-nav">
+                    <!-- <li class="hidden-xs">
+                      <a>
+                        <span class="glyphicon glyphicon-qrcode"></span>
+                      </a>
+                    </li> -->
+                </ul>
+                <ul id="nav-right-bar" class="nav navbar-nav navbar-right">
+                </ul>
+            </div>
         </div>
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
-          <ul class="nav navbar-nav">
-            <!-- <li class="hidden-xs">
-              <a>
-                <span class="glyphicon glyphicon-qrcode"></span>
-              </a>
-            </li> -->
-          </ul>
-          <ul id="nav-right-bar" class="nav navbar-nav navbar-right">
-          </ul>
+    </div>
+</nav>
+<div class="container">
+    <div class="col-md-12">
+        <div class="alert alert-danger" role="alert" v-if="!isConnectionAlive">
+            <strong>Connection lost</strong> try to reconnect after 3s, or <a href="/" class="alert-link">connect immediately</a>
         </div>
-      </div>
     </div>
-  </nav>
-  <div class="container">
+    <!--
     <div class="col-md-12">
-      <div class="alert alert-danger" role="alert" v-if="!isConnectionAlive">
-        <strong>Connection lost</strong> try to reconnect after 3s, or <a href="/" class="alert-link">connect immediately</a>
-      </div>
+        <button class="btn btn-primary" v-on:click="refresh">
+            <span class="glyphicon glyphicon-refresh"></span> Refresh
+        </button>
+    </div>
+    -->
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                Master
+                <span class="panel-icon pull-right">
+                    <button class="btn btn-success btn-sm" rel="tooltip"  v-on:click="addNewProgram()" data-original-title="Click to add programs"><i class="fa fa-plus"></i>New Program</button>
+                </span>
+            </div>
+            <div class="panel-body">
+                <table class="table table-hover table-bordered">
+                    <thead>
+                    <tr>
+                        <td>Name</td>
+                        <td>Status</td>
+                        <td>View</td>
+                        <td>Command</td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="p in programs">
+                        <td v-text="p.program.name"></td>
+                        <td v-html="p.status | colorStatus"></td>
+                        <td>
+                            <button class="btn btn-default btn-xs" v-on:click="cmdTail(p.program.name)">
+                                <span class="fa fa-file-text-o"></span> Log
+                            </button>
+                            <a href="/settings/{{p.program.name}}" class="btn btn-default btn-xs">
+                                <span class="fa fa-bar-chart"></span> Profiles
+                            </a>
+                            <button class="btn btn-default btn-xs" data-toggle="tooltip" title="{{p.program.command}}">
+                                <span class="glyphicon glyphicon-info-sign"></span> Info
+                            </button>
+                        </td>
+                        <td>
+                            <button v-on:click="cmdStart(p.program.name)" class="btn btn-default btn-xs"
+                                    :disabled='["running", "stopping"].indexOf(p.status) != -1'>
+                                <span class="glyphicon glyphicon-play"></span> Start
+                            </button>
+                            <button class="btn btn-default btn-xs" v-on:click="cmdStop(p.program.name)"
+                                    :disabled="!canStop(p.status)">
+                                <span class="glyphicon glyphicon-stop"></span> Stop
+                            </button>
+                            <button v-on:click="showEditProgram(p.program)" class="btn btn-default btn-xs">
+                                <span class="glyphicon glyphicon-edit"></span> Edit
+                            </button>
+                            <button class="btn btn-default btn-xs" v-on:click="cmdDelete(p.program.name)">
+                                <span class="color-red glyphicon glyphicon-trash"></span> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div v-for="(slave,items) in slaves" class="panel panel-default">
+            <div class="panel-heading">
+                {{slave}}
+                <span class="panel-icon pull-right">
+                    <button class="btn btn-success btn-sm" rel="tooltip"  v-on:click="addNewProgram(slave)"
+                            data-original-title="Click to add programs">
+                        <i class="fa fa-plus"></i>New Program
+                    </button>
+                </span>
+            </div>
+            <div class="panel-body">
+                <table class="table table-hover table-bordered">
+                    <thead>
+                    <tr>
+                        <td>Name</td>
+                        <td>Status</td>
+                        <td>View</td>
+                        <td>Command</td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="p in items">
+                        <td v-text="p.program.name"></td>
+                        <td v-html="p.status | colorStatus"></td>
+                        <td>
+                            <button class="btn btn-default btn-xs" v-on:click="cmdTail(p.program.name,slave)">
+                                <span class="fa fa-file-text-o"></span> Log
+                            </button>
+                            <a href="/distributed/{{slave}}/settings/{{p.program.name}}" class="btn btn-default btn-xs">
+                                <span class="fa fa-bar-chart"></span> Profiles
+                            </a>
+                            <button class="btn btn-default btn-xs" data-toggle="tooltip" title="{{p.program.command}}">
+                                <span class="glyphicon glyphicon-info-sign"></span> Info
+                            </button>
+                        </td>
+                        <td>
+                            <button v-on:click="cmdStart(p.program.name,slave)" class="btn btn-default btn-xs"
+                                    :disabled='["running", "stopping"].indexOf(p.status) != -1'>
+                                <span class="glyphicon glyphicon-play"></span> Start
+                            </button>
+                            <button class="btn btn-default btn-xs" v-on:click="cmdStop(p.program.name,slave)"
+                                    :disabled="!canStop(p.status)">
+                                <span class="glyphicon glyphicon-stop"></span> Stop
+                            </button>
+                            <button v-on:click="showEditProgram(p.program,slave)" class="btn btn-default btn-xs">
+                                <span class="glyphicon glyphicon-edit"></span> Edit
+                            </button>
+                            <button class="btn btn-default btn-xs" v-on:click="cmdDelete(p.program.name,slave)">
+                                <span class="color-red glyphicon glyphicon-trash"></span> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
     <div class="col-md-12">
-      <button class="btn btn-default btn-sm" id="launchNewProgram">
-        <span class="glyphicon glyphicon-plus"></span> New Program
-      </button>
-      <button class="btn btn-default btn-sm" v-on:click="refresh">
-        <span class="glyphicon glyphicon-refresh"></span> Refresh
-      </button>
-      <button class="btn btn-default btn-sm" v-on:click="reload">
-        <span class="glyphicon glyphicon-repeat"></span> Reload
-      </button>
-      <button class="btn btn-default btn-sm" v-on:click="test" data-toggle="tooltip" data-placement="bottom" title="Tooltip on bottom">
-        <span class="glyphicon glyphicon-glass"></span> Test
-      </button>
-    </div>
-    <div class="col-md-12">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <td>Name</td>
-            <td>Status</td>
-            <td>View</td>
-            <td>Command</td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in programs">
-            <td v-text="p.program.name"></td>
-            <td v-html="p.status | colorStatus"></td>
-            <td>
-              <button class="btn btn-default btn-xs" v-on:click="cmdTail(p.program.name)">
-                <span class="fa fa-file-text-o"></span> Log
-              </button>
-              <a href="/settings/{{p.program.name}}" class="btn btn-default btn-xs">
-                <span class="fa fa-bar-chart"></span> Profiles
-              </a>
-              <button class="btn btn-default btn-xs" data-toggle="tooltip" title="{{p.program.command}}">
-                <span class="glyphicon glyphicon-info-sign"></span> Info
-              </button>
-            </td>
-            <td>
-              <button v-on:click="cmdStart(p.program.name)" class="btn btn-default btn-xs" :disabled='["running", "stopping"].indexOf(p.status) != -1'>
-                <span class="glyphicon glyphicon-play"></span> Start
-              </button>
-              <button class="btn btn-default btn-xs" v-on:click="cmdStop(p.program.name)" :disabled="!canStop(p.status)">
-                <span class="glyphicon glyphicon-stop"></span> Stop
-              </button>
-              <button v-on:click="showEditProgram(p.program)" class="btn btn-default btn-xs">
-                <span class="glyphicon glyphicon-edit"></span> Edit
-              </button>
-              <button class="btn btn-default btn-xs" v-on:click="cmdDelete(p.program.name)">
-                <span class="color-red glyphicon glyphicon-trash"></span> Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="col-md-12">
-      <div id="footer" class="pull-right" style="margin: 2em 1em">
-        <a href="https://github.com/codeskyblue/gosuv">gosuv ([[.Version]])</a>, written by <a href="https://github.com/codeskyblue">codeskyblue</a>. 2017. go1.7
-      </div>
+        <div id="footer" class="pull-right" style="margin: 2em 1em">
+            <div>
+                <a href="https://github.com/codeskyblue/gosuv">gosuv ([[.Version]])</a>, written by <a
+                    href="https://github.com/codeskyblue">codeskyblue</a>. 2017. go1.7
+            </div>
+            <div>
+                <a href="https://github.com/ihaiker/distributed-gosuv">distributed-gosuv ([[.Version]])</a>, written by
+                <a href="https://github.com/ihaiker">haiker</a>. 2017. go1.8
+            </div>
+        </div>
     </div>
     <!-- panels -->
     <!-- modals -->
     <div class="modal" id="newProgram">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <form id="formNewProgram" action="/api/programs" method="post">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-              <h4 class="modal-title">New program</h4>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="formNewProgram" action="" method="post">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title">New program</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" name="name" v-model="program.name" class="form-control"
+                                   placeholder="name (must be unique)" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Command</label>
+                            <input type="text" name="command" class="form-control"
+                                   placeholder="shell command, ex: redis-server --port 6379">
+                        </div>
+                        <div class="form-group">
+                            <label>Directory</label>
+                            <input type="text" name="dir" class="form-control" placeholder="directory, default is /">
+                        </div>
+                        <div class="form-group">
+                            <label>User</label>
+                            <input type="text" name="user" class="form-control" placeholder="user, optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Fail Retries</label>
+                            <input style="max-width: 5em" type="number" name="retries" class="form-control" min="0"
+                                   step="1" value="3">
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input name="autostart" type="checkbox"> Auto start
+                            </label>
+                        </div>
+                        <!-- <button type="submit" class="btn btn-Wdefault">Submit</button> -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" v-on:click="formNewProgram()">Add program</button>
+                    </div>
+                </form>
             </div>
-            <div class="modal-body">
-              <div class="form-group">
-                <label>Name</label>
-                <input type="text" name="name" v-model="program.name" class="form-control" placeholder="name (must be unique)" required>
-              </div>
-              <div class="form-group">
-                <label>Command</label>
-                <input type="text" name="command" class="form-control" placeholder="shell command, ex: redis-server --port 6379">
-              </div>
-              <div class="form-group">
-                <label>Directory</label>
-                <input type="text" name="dir" class="form-control" placeholder="directory, default is /">
-              </div>
-              <div class="form-group">
-                <label>User</label>
-                <input type="text" name="user" class="form-control" placeholder="user, optional">
-              </div>
-              <div class="form-group">
-                <label>Fail Retries</label>
-                <input style="max-width: 5em" type="number" name="retries" class="form-control" min="0" step="1" value="3">
-              </div>
-              <div class="checkbox">
-                <label>
-                  <input name="autostart" type="checkbox"> Auto start
-                </label>
-              </div>
-              <!-- <button type="submit" class="btn btn-Wdefault">Submit</button> -->
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-              <button type="submit" class="btn btn-primary">Add program</button>
-            </div>
-          </form>
         </div>
-      </div>
     </div>
     <!-- model edit -->
     <div class="modal" id="programEdit">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <form v-on:submit.prevent="editProgram">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-              <h4 class="modal-title"><span class="glyphicon glyphicon-edit"></span> <span v-text="edit.program.name"></span></h4>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form v-on:submit.prevent="editProgram">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title"><span class="glyphicon glyphicon-edit"></span> <span
+                                v-text="edit.program.name"></span></h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Command</label>
+                            <input type="text" name="command" class="form-control" v-model="edit.program.command">
+                        </div>
+                        <div class="form-group">
+                            <label>Directory</label>
+                            <input type="text" name="dir" class="form-control" v-model="edit.program.directory">
+                        </div>
+                        <div class="form-group">
+                            <label>User</label>
+                            <input type="text" name="user" class="form-control" v-model="edit.program.user">
+                        </div>
+                        <div class="form-group">
+                            <label>Fail Retries</label>
+                            <input style="max-width: 5em" type="number" name="retries" class="form-control" min="0"
+                                   step="1" v-model="edit.program.startRetries">
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input name="autostart" type="checkbox" v-model="edit.program.startAuto"> Auto start
+                            </label>
+                        </div>
+                        <!-- <button type="submit" class="btn btn-Wdefault">Submit</button> -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
             </div>
-            <div class="modal-body">
-              <div class="form-group">
-                <label>Command</label>
-                <input type="text" name="command" class="form-control" v-model="edit.program.command">
-              </div>
-              <div class="form-group">
-                <label>Directory</label>
-                <input type="text" name="dir" class="form-control" v-model="edit.program.directory">
-              </div>
-              <div class="form-group">
-                <label>User</label>
-                <input type="text" name="user" class="form-control" v-model="edit.program.user">
-              </div>
-              <div class="form-group">
-                <label>Fail Retries</label>
-                <input style="max-width: 5em" type="number" name="retries" class="form-control" min="0" step="1" v-model="edit.program.startRetries">
-              </div>
-              <div class="checkbox">
-                <label>
-                  <input name="autostart" type="checkbox" v-model="edit.program.startAuto"> Auto start
-                </label>
-              </div>
-              <!-- <button type="submit" class="btn btn-Wdefault">Submit</button> -->
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-              <button type="submit" class="btn btn-primary">Update</button>
-            </div>
-          </form>
         </div>
-      </div>
     </div>
     <!-- /.modal -->
     <div class="modal" id="modalTailf">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <form id="formNewProgram" action="/api/programs" method="post">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-              <h4 class="modal-title">Tail</h4>
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Tail</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Line: {{log.line_count}}</p>
+                    <pre v-html="log.content" class="realtime-log"></pre>
+                    <div class="checkbox text-right">
+                        <label>
+                            <input v-model="log.follow" type="checkbox"> Follow
+                        </label>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-              <p>Line: {{log.line_count}}</p>
-              <pre v-html="log.content" class="realtime-log"></pre>
-              <div class="checkbox text-right">
-                <label>
-                  <input v-model="log.follow" type="checkbox"> Follow
-                </label>
-              </div>
-            </div>
-          </form>
         </div>
-      </div>
     </div>
-  </div>
-  <!-- polyfill make browser support ECMAScript 6th edition -->
-  <script src="/res/js/promise-polyfill.min.js"></script>
-  <script src="/res/js/jquery-3.1.0.min.js"></script>
-  <script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>
-  <script src="/res/js/moment.min.js"></script>
-  <script src="/res/js/underscore-min.js"></script>
-  <script src="/res/js/vue-1.0.min.js"></script>
-  <script src="/res/js/common.js"></script>
-  <script src="/res/js/index.js"></script>
-  <script type="text/javascript">
-  $(function() {
-    $("#launchNewProgram").click(function() {
-      $("#newProgram").modal({
-        show: true,
-        // keyboard: false,
-        backdrop: 'static',
-      })
-    });
-    // $("#modalTailf").modal({
-    //   // show: true,
-    //   // keyboard: false,
-    //   // backdrop: 'static',
-    // })
-  });
-  </script>
+</div>
+<!-- polyfill make browser support ECMAScript 6th edition -->
+<script src="/res/js/promise-polyfill.min.js"></script>
+<script src="/res/js/jquery-3.1.0.min.js"></script>
+<script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="/res/js/moment.min.js"></script>
+<script src="/res/js/underscore-min.js"></script>
+<script src="/res/js/vue-1.0.min.js"></script>
+<script src="/res/js/common.js"></script>
+<script src="/res/js/index.js"></script>
 </body>
-
 </html>

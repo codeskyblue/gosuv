@@ -41,6 +41,13 @@ func actionStartServer(c *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if c.Bool("foreground") {
+		if err = newDistributed(suv, hdlr); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	auth := cfg.Server.HttpAuth
 	if auth.Enabled {
 		hdlr = httpauth.SimpleBasicAuth(auth.User, auth.Password)(hdlr)

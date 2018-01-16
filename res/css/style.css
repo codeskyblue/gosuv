@@ -37,3 +37,11 @@ small.user {
 .color-red {
     color: red;
 }
+
+.panel-body{
+    padding: 0px;
+}
+
+.table {
+    margin: 0px;
+}

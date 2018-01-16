@@ -18,13 +18,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/codeskyblue/kexec"
 	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/qiniu/log"
 	_ "github.com/shurcooL/vfsgen"
 	"github.com/soopsio/gosuv/gops"
+	"github.com/soopsio/kexec"
 )
 
 var defaultGosuvDir string
@@ -101,6 +101,8 @@ func (s *Supervisor) stopAndWait(name string) error {
 	}
 	c := make(chan string, 0)
 	s.addStatusChangeListener(c)
+	// p.stopCommand()
+	// 停止任务
 	p.Operate(StopEvent)
 	for {
 		select {
@@ -183,7 +185,6 @@ func (s *Supervisor) loadDB() error {
 	visited := map[string]bool{}
 	names := make([]string, 0, len(pgs))
 	for _, pg := range pgs {
-		fmt.Printf("%+v", pg)
 		names = append(names, pg.Name)
 		visited[pg.Name] = true
 		s.addOrUpdateProgram(pg)
