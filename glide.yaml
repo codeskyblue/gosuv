@@ -1,4 +1,4 @@
-package: github.com/codeskyblue/gosuv
+package: github.com/soopsio/gosuv
 import:
 - package: github.com/codeskyblue/kexec
 - package: github.com/equinox-io/equinox
@@ -9,10 +9,11 @@ import:
 - package: github.com/gorilla/mux
 - package: github.com/gorilla/websocket
 - package: github.com/kennygrant/sanitize
-- package: github.com/mitchellh/go-ps
+- package: github.com/shirou/gopsutil/process
 - package: github.com/qiniu/log
 - package: github.com/shurcooL/vfsgen
 - package: github.com/urfave/cli
+- package: github.com/lunny/dingtalk_webhook
 testImport:
 - package: github.com/smartystreets/goconvey
   subpackages:

@@ -31,6 +31,7 @@ import (
 	"github.com/codeskyblue/gosuv/pushover"
 	"github.com/codeskyblue/kexec"
 	"github.com/kennygrant/sanitize"
+	"github.com/lunny/dingtalk_webhook"
 	"github.com/qiniu/log"
 )
 
@@ -105,28 +106,39 @@ var (
 )
 
 type Program struct {
-	Name          string   `yaml:"name" json:"name"`
-	Command       string   `yaml:"command" json:"command"`
-	Environ       []string `yaml:"environ" json:"environ"`
-	Dir           string   `yaml:"directory" json:"directory"`
-	StartAuto     bool     `yaml:"start_auto" json:"startAuto"`
-	StartRetries  int      `yaml:"start_retries" json:"startRetries"`
-	StartSeconds  int      `yaml:"start_seconds,omitempty" json:"startSeconds"`
-	StopTimeout   int      `yaml:"stop_timeout,omitempty" json:"stopTimeout"`
-	User          string   `yaml:"user,omitempty" json:"user"`
-	Notifications struct {
-		Pushover struct {
-			ApiKey string   `yaml:"api_key"`
-			Users  []string `yaml:"users"`
-		} `yaml:"pushover,omitempty"`
-	} `yaml:"notifications,omitempty" json:"-"`
-	WebHook struct {
-		Github struct {
-			Secret string `yaml:"secret"`
-		} `yaml:"github"`
-		Command string `yaml:"command"`
-		Timeout int    `yaml:"timeout"`
-	} `yaml:"webhook,omitempty" json:"-"`
+	Name          string        `yaml:"name" json:"name"`
+	Command       string        `yaml:"command" json:"command"`
+	Environ       []string      `yaml:"environ" json:"environ"`
+	Dir           string        `yaml:"directory" json:"directory"`
+	StartAuto     bool          `yaml:"start_auto" json:"startAuto"`
+	StartRetries  int           `yaml:"start_retries" json:"startRetries"`
+	StartSeconds  int           `yaml:"start_seconds,omitempty" json:"startSeconds"`
+	StopTimeout   int           `yaml:"stop_timeout,omitempty" json:"stopTimeout"`
+	User          string        `yaml:"user,omitempty" json:"user"`
+	Notifications Notifications `yaml:"notifications,omitempty" json:"-"`
+	WebHook       WebHook       `yaml:"webhook,omitempty" json:"-"`
+}
+
+type Notifications struct {
+	Pushover struct {
+		ApiKey string   `yaml:"api_key"`
+		Users  []string `yaml:"users"`
+	} `yaml:"pushover,omitempty"`
+
+	Dingtalk struct {
+		Groups []struct {
+			Secret  string   `yaml:"secret"`
+			Mobiles []string `yaml:"mobile"`
+		} `yaml:"groups"`
+	} `yaml:"dingtalk,omitempty"`
+}
+
+type WebHook struct {
+	Github struct {
+		Secret string `yaml:"secret"`
+	} `yaml:"github"`
+	Command string `yaml:"command"`
+	Timeout int    `yaml:"timeout"`
 }
 
 func (p *Program) Check() error {
@@ -143,18 +155,41 @@ func (p *Program) Check() error {
 	return nil
 }
 
-func (p *Program) RunNotification() {
-	po := p.Notifications.Pushover
-	if po.ApiKey != "" && len(po.Users) > 0 {
-		for _, user := range po.Users {
-			err := pushover.Notify(pushover.Params{
-				Token:   po.ApiKey,
-				User:    user,
-				Title:   "gosuv",
-				Message: fmt.Sprintf("%s change to fatal", p.Name),
-			})
-			if err != nil {
-				log.Warnf("pushover error: %v", err)
+func (p *Program) RunNotification(state FSMState) {
+	notis := []Notifications{}
+	notis = append(notis, cfg.Notifications)
+	t := time.Now().Format("2006-01-02 15:04:05")
+	host := ""
+	if cfg.Server.Name != "" {
+		host = cfg.Server.Name
+	} else {
+		host, _ = os.Hostname()
+	}
+	for _, noti := range notis {
+		po := noti.Pushover
+		msg := fmt.Sprintf("[%s] %s: %s changed: %s", t, host, p.Name, state)
+		if po.ApiKey != "" && len(po.Users) > 0 {
+			for _, user := range po.Users {
+				err := pushover.Notify(pushover.Params{
+					Token:   po.ApiKey,
+					User:    user,
+					Title:   "gosuv",
+					Message: msg,
+				})
+				if err != nil {
+					log.Warnf("pushover error: %v", err)
+				}
+			}
+		}
+
+		pw := noti.Dingtalk
+		if len(pw.Groups) > 0 {
+			for _, group := range pw.Groups {
+				ding := dingtalk.NewWebhook(group.Secret)
+				err := ding.SendTextMsg(msg, false, group.Mobiles...)
+				if err != nil {
+					log.Error("钉钉通知失败:", err)
+				}
 			}
 		}
 	}
@@ -184,7 +219,7 @@ type Process struct {
 func (p *Process) buildCommand() *kexec.KCommand {
 	cmd := kexec.CommandString(p.Command)
 	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
-	logDir := filepath.Join(defaultConfigDir, "log", sanitize.Name(p.Name))
+	logDir := filepath.Join(defaultGosuvDir, "log", sanitize.Name(p.Name))
 	if !IsDir(logDir) {
 		os.MkdirAll(logDir, 0755)
 	}
@@ -265,8 +300,10 @@ func (p *Process) stopCommand() {
 	}
 	select {
 	case <-GoFunc(p.cmd.Wait):
+		p.RunNotification(FSMState("quit normally"))
 		log.Printf("program(%s) quit normally", p.Name)
 	case <-time.After(time.Duration(p.StopTimeout) * time.Second): // TODO: add 3s to config
+		p.RunNotification(FSMState("terminate all"))
 		log.Printf("program(%s) terminate all", p.Name)
 		p.cmd.Terminate(syscall.SIGKILL) // cleanup
 	}
@@ -338,11 +375,10 @@ func NewProcess(pg Program) *Process {
 	}
 	pr.StateChange = func(_, newStatus FSMState) {
 		pr.Status = string(newStatus)
-
 		// TODO: status need to filter with config, not hard coded.
-		if newStatus == Fatal {
-			go pr.Program.RunNotification()
-		}
+		// if newStatus == Fatal {
+		go pr.Program.RunNotification(newStatus)
+		// }
 	}
 	if pr.StartSeconds <= 0 {
 		pr.StartSeconds = 3

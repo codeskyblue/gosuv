@@ -45,7 +45,7 @@ func githubLatestVersion(repo, name string) (tag TagInfo, err error) {
 }
 
 func githubUpdate(skipConfirm bool) error {
-	repo, name := "codeskyblue", "gosuv"
+	repo, name := "soopsio", "gosuv"
 	tag, err := githubLatestVersion(repo, name)
 	if err != nil {
 		fmt.Println("Update failed:", err)
@@ -110,7 +110,7 @@ func checkServerStatus() error {
 }
 
 func main() {
-	var defaultConfigPath = filepath.Join(defaultConfigDir, "config.yml")
+	var defaultConfigPath = filepath.Join(defaultGosuvDir, "config.yml")
 
 	app := cli.NewApp()
 	app.Name = "gosuv"

@@ -18,21 +18,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/codeskyblue/gosuv/gops"
 	"github.com/codeskyblue/kexec"
 	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/qiniu/log"
 	_ "github.com/shurcooL/vfsgen"
+	"github.com/soopsio/gosuv/gops"
 )
 
-var defaultConfigDir string
+var defaultGosuvDir string
 
 func init() {
-	defaultConfigDir = os.Getenv("GOSUV_HOME_DIR")
-	if defaultConfigDir == "" {
-		defaultConfigDir = filepath.Join(UserHomeDir(), ".gosuv")
+	defaultGosuvDir = os.Getenv("GOSUV_HOME_DIR")
+	if defaultGosuvDir == "" {
+		defaultGosuvDir = filepath.Join(UserHomeDir(), ".gosuv")
 	}
 	http.Handle("/res/", http.StripPrefix("/res/", http.FileServer(Assets))) // http.StripPrefix("/res/", Assets))
 }
@@ -183,6 +183,7 @@ func (s *Supervisor) loadDB() error {
 	visited := map[string]bool{}
 	names := make([]string, 0, len(pgs))
 	for _, pg := range pgs {
+		fmt.Printf("%+v", pg)
 		names = append(names, pg.Name)
 		visited[pg.Name] = true
 		s.addOrUpdateProgram(pg)
@@ -597,6 +598,7 @@ func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
+
 		mainPinfo, err := ps.ProcInfo()
 		if err != nil {
 			break
@@ -647,7 +649,7 @@ func (s *Supervisor) AutoStartPrograms() {
 
 func newSupervisorHandler() (suv *Supervisor, hdlr http.Handler, err error) {
 	suv = &Supervisor{
-		ConfigDir: defaultConfigDir,
+		ConfigDir: defaultGosuvDir,
 		pgMap:     make(map[string]Program, 0),
 		procMap:   make(map[string]*Process, 0),
 		eventB:    NewWriteBroadcaster(4 * 1024),

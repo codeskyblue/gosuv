@@ -57,7 +57,7 @@ func actionStartServer(c *cli.Context) error {
 			fmt.Println("server is already running")
 			return nil
 		}
-		logPath := filepath.Join(defaultConfigDir, "gosuv.log")
+		logPath := filepath.Join(defaultGosuvDir, "gosuv.log")
 		logFd, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			log.Fatalf("create file %s failed: %v", logPath, err)

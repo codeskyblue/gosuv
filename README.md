@@ -97,12 +97,19 @@ Example config.yaml
 ```
 server:
   httpauth:
-    enabled: false
-    username: uu
-    password: pp
-  addr: :11313
+    enabled: true
+    username: admin
+    password: admin
+  addr: :8083
+  name: 10.10.99.177
+notifications:
+  dingtalk:
+    groups:
+    - secret: c1b8032******************aa736a
+      mobile:
+      - "153********"
 client:
-  server_url: http://localhost:11313
+  server_url: http://admin:admin@localhost:8083
 ```
 
 Logs can be found in `$HOME/.gosuv/log/`
