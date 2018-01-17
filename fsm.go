@@ -31,6 +31,7 @@ import (
 
 	"github.com/kennygrant/sanitize"
 	"github.com/lunny/dingtalk_webhook"
+	"github.com/natefinch/lumberjack"
 	"github.com/qiniu/log"
 	"github.com/soopsio/gosuv/pushover"
 	"github.com/soopsio/kexec"
@@ -212,7 +213,7 @@ type Process struct {
 	Stdout     *QuickLossBroadcastWriter `json:"-"`
 	Stderr     *QuickLossBroadcastWriter `json:"-"`
 	Output     *QuickLossBroadcastWriter `json:"-"`
-	OutputFile *os.File                  `json:"-"`
+	OutputFile io.WriteCloser            `json:"-"`
 	stopC      chan syscall.Signal
 	retryLeft  int
 	Status     string `json:"status"`
@@ -230,7 +231,17 @@ func (p *Process) buildCommand() *kexec.KCommand {
 	}
 	var fout io.Writer
 	var err error
-	p.OutputFile, err = os.OpenFile(filepath.Join(logDir, "output.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	// p.OutputFile, err = os.OpenFile(filepath.Join(logDir, "output.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	// p.OutputFile = NewRotate(filepath.Join(logDir, "output.log"))
+	p.OutputFile = &lumberjack.Logger{
+		Filename:   filepath.Join(logDir, "output.log"),
+		MaxSize:    1024,
+		MaxAge:     14,
+		MaxBackups: 14,
+		Compress:   false,
+		LocalTime:  true,
+	}
+
 	if err != nil {
 		log.Warn("create stdout log failed:", err)
 		fout = ioutil.Discard
