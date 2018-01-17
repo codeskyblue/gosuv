@@ -116,7 +116,7 @@ func checkServerStatus() error {
 }
 
 func main() {
-	var defaultConfigPath = filepath.Join(defaultGosuvDir, "config.yml")
+	var defaultConfigPath = filepath.Join(defaultGosuvDir, "conf/config.yml")
 
 	app := cli.NewApp()
 	app.Name = "gosuv"

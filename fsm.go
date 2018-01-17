@@ -292,6 +292,7 @@ func (p *Process) waitNextRetry() {
 	if p.retryLeft <= 0 {
 		p.retryLeft = p.StartRetries
 		p.SetState(Fatal)
+		p.cmd = nil
 		return
 	}
 	p.retryLeft -= 1
@@ -353,6 +354,7 @@ func (p *Process) startCommand() {
 	if err := p.cmd.Start(); err != nil {
 		log.Warnf("program %s start failed: %v", p.Name, err)
 		p.SetState(Fatal)
+		p.cmd = nil
 		return
 	}
 	// 如果是running状态，重置 retryLeft
@@ -368,6 +370,7 @@ func (p *Process) startCommand() {
 			if time.Since(startTime) < time.Duration(p.StartSeconds)*time.Second {
 				if p.retryLeft == p.StartRetries { // If first time quit so fast, just set to fatal
 					p.SetState(Fatal)
+					p.cmd = nil
 					p.RunNotification(Fatal)
 					log.Printf("program(%s) exit too quick, status -> fatal", p.Name)
 					return

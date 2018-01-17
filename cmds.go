@@ -77,6 +77,9 @@ func actionStartServer(c *cli.Context) error {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if err := ioutil.WriteFile("/var/run/gosuv.pid", []byte(strconv.Itoa(cmd.Process.Pid)), 0644); err != nil {
+			log.Fatalln(err)
+		}
 		select {
 		case err = <-GoFunc(cmd.Wait):
 			log.Fatalf("server started failed, %v", err)

@@ -599,7 +599,6 @@ func (s *Supervisor) wsPerf(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
-
 		mainPinfo, err := ps.ProcInfo()
 		if err != nil {
 			break
@@ -650,7 +649,7 @@ func (s *Supervisor) AutoStartPrograms() {
 
 func newSupervisorHandler() (suv *Supervisor, hdlr http.Handler, err error) {
 	suv = &Supervisor{
-		ConfigDir: defaultGosuvDir,
+		ConfigDir: filepath.Join(defaultGosuvDir, "conf"),
 		pgMap:     make(map[string]Program, 0),
 		procMap:   make(map[string]*Process, 0),
 		eventB:    NewWriteBroadcaster(4 * 1024),
