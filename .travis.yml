@@ -3,7 +3,7 @@ sudo: false
 go:
 - 1.7
 install:
-- go get -v
+- go get -t -v
 script:
 - go test -v
 after_success:
