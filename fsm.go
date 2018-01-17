@@ -194,7 +194,7 @@ func (p *Program) RunNotification(state FSMState) {
 				ding := dingtalk.NewWebhook(group.Secret)
 				err := ding.SendTextMsg(msg, false, group.Mobiles...)
 				if err != nil {
-					log.Error("钉钉通知失败:", err)
+					log.Error("钉钉通知失败:", msg, err)
 				}
 			}
 		}
@@ -288,6 +288,9 @@ func (p *Process) buildCommand() *kexec.KCommand {
 }
 
 func (p *Process) waitNextRetry() {
+	if p.OutputFile != nil {
+		p.OutputFile.Close()
+	}
 	p.SetState(RetryWait)
 	if p.retryLeft <= 0 {
 		p.retryLeft = p.StartRetries
@@ -376,11 +379,13 @@ func (p *Process) startCommand() {
 					return
 				}
 			}
+
 			p.waitNextRetry()
 		case <-p.stopC:
 			log.Println("recv stop command")
 			p.stopCommand() // clean up all process
 		}
+
 	}()
 }
 
