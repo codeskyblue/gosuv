@@ -304,20 +304,17 @@ func (p *Process) waitNextRetry() {
 }
 
 func (p *Process) stopCommand() {
-	fmt.Println("stop 111", p)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	defer p.SetState(Stopped)
 	if p.cmd == nil {
 		return
 	}
-	fmt.Println("stop 222", p)
 
 	p.SetState(Stopping)
 	if p.cmd.Process != nil {
 		p.cmd.Process.Signal(syscall.SIGTERM) // TODO(ssx): add it to config
 	}
-	fmt.Println("stop 333", p)
 	select {
 	case <-GoFunc(p.cmd.Wait):
 		p.RunNotification(FSMState("quit normally"))
@@ -327,9 +324,7 @@ func (p *Process) stopCommand() {
 		log.Printf("program(%s) terminate all", p.Name)
 		p.cmd.Terminate(syscall.SIGKILL) // cleanup
 	}
-	fmt.Println("stop 444", p)
 	err := p.cmd.Wait() // This is OK, because Signal KILL will definitely work
-	fmt.Println("stop 555", p)
 	prefixStr := "\n--- GOSUV LOG " + time.Now().Format("2006-01-02 15:04:05")
 	if err == nil {
 		io.WriteString(p.cmd.Stderr, fmt.Sprintf("%s exit success ---\n\n", prefixStr))
@@ -363,10 +358,8 @@ func (p *Process) startCommand() {
 	// 如果是running状态，重置 retryLeft
 	p.retryLeft = p.StartRetries
 	go func() {
-		log.Println("开始运行 1111")
 		errC := GoFunc(p.cmd.Wait)
 		startTime := time.Now()
-		log.Println("开始运行 2222")
 		select {
 		case <-errC:
 			// if p.cmd.Wait() returns, it means program and its sub process all quited. no need to kill again
@@ -385,7 +378,6 @@ func (p *Process) startCommand() {
 			log.Println("recv stop command")
 			p.stopCommand() // clean up all process
 		}
-		log.Println("开始运行 3333")
 	}()
 }
 
