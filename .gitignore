@@ -29,4 +29,5 @@ gosuv
 bindata_assetfs.go
 assets_vfsdata.go
 
+.vscode/
 vendor/*

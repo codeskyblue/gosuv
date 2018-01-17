@@ -4,6 +4,7 @@
     "username": "root",
     "password": "111111",
     "port": 22,
+
     "secure": false,
     "protocol": "sftp",
     "uploadOnSave": true,
