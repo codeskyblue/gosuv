@@ -2,7 +2,7 @@ package: github.com/soopsio/gosuv
 import:
 - package: github.com/soopsio/kexec
 - package: github.com/equinox-io/equinox
-- package: github.com/franela/goreq
+- package: github.com/imroc/req
 - package: github.com/glycerine/rbuf
 - package: github.com/go-yaml/yaml
 - package: github.com/goji/httpauth

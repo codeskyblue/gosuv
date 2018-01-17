@@ -14,8 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/franela/goreq"
+	// "github.com/franela/goreq"
 	"github.com/goji/httpauth"
+	"github.com/imroc/req"
 	"github.com/urfave/cli"
 )
 
@@ -91,9 +92,10 @@ func actionStartServer(c *cli.Context) error {
 }
 
 func actionStatus(c *cli.Context) error {
-	res, err := goreq.Request{
-		Uri: cfg.Client.ServerURL + "/api/programs",
-	}.Do()
+	// res, err := goreq.Request{
+	// 	Uri: cfg.Client.ServerURL + "/api/programs",
+	// }.Do()
+	res, err := req.Get(cfg.Client.ServerURL + "/api/programs")
 	if err != nil {
 		return err
 	}
@@ -114,10 +116,12 @@ func actionStatus(c *cli.Context) error {
 
 // cmd: <start|stop>
 func programOperate(cmd, name string) (err error, success bool) {
-	res, err := goreq.Request{
-		Method: "POST",
-		Uri:    cfg.Client.ServerURL + "/api/programs/" + name + "/" + cmd,
-	}.Do()
+	// res, err := goreq.Request{
+	// 	Method: "POST",
+	// 	Uri:    cfg.Client.ServerURL + "/api/programs/" + name + "/" + cmd,
+	// }.Do()
+
+	res, err := req.Post(cfg.Client.ServerURL + "/api/programs/" + name + "/" + cmd)
 	if err != nil {
 		return
 	}
