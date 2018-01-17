@@ -14,8 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/franela/goreq"
+	// "github.com/franela/goreq"
 	"github.com/goji/httpauth"
+	"github.com/imroc/req"
 	"github.com/urfave/cli"
 )
 
@@ -41,6 +42,13 @@ func actionStartServer(c *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if c.Bool("foreground") {
+		if err = newDistributed(suv, hdlr); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	auth := cfg.Server.HttpAuth
 	if auth.Enabled {
 		hdlr = httpauth.SimpleBasicAuth(auth.User, auth.Password)(hdlr)
@@ -57,7 +65,7 @@ func actionStartServer(c *cli.Context) error {
 			fmt.Println("server is already running")
 			return nil
 		}
-		logPath := filepath.Join(defaultConfigDir, "gosuv.log")
+		logPath := filepath.Join(defaultGosuvDir, "gosuv.log")
 		logFd, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			log.Fatalf("create file %s failed: %v", logPath, err)
@@ -68,6 +76,9 @@ func actionStartServer(c *cli.Context) error {
 		err = cmd.Start()
 		if err != nil {
 			log.Fatal(err)
+		}
+		if err := ioutil.WriteFile("/var/run/gosuv.pid", []byte(strconv.Itoa(cmd.Process.Pid)), 0644); err != nil {
+			log.Fatalln(err)
 		}
 		select {
 		case err = <-GoFunc(cmd.Wait):
@@ -84,9 +95,10 @@ func actionStartServer(c *cli.Context) error {
 }
 
 func actionStatus(c *cli.Context) error {
-	res, err := goreq.Request{
-		Uri: cfg.Client.ServerURL + "/api/programs",
-	}.Do()
+	// res, err := goreq.Request{
+	// 	Uri: cfg.Client.ServerURL + "/api/programs",
+	// }.Do()
+	res, err := req.Get(cfg.Client.ServerURL + "/api/programs")
 	if err != nil {
 		return err
 	}
@@ -94,7 +106,10 @@ func actionStatus(c *cli.Context) error {
 		Program Program `json:"program"`
 		Status  string  `json:"status"`
 	}, 0)
-	if err := res.Body.FromJsonTo(&programs); err != nil {
+	// if err := res.Body.FromJsonTo(&programs); err != nil {
+	// 	return err
+	// }
+	if err := res.ToJSON(&programs); err != nil {
 		return err
 	}
 	format := "%-23s\t%-8s\n"
@@ -107,17 +122,22 @@ func actionStatus(c *cli.Context) error {
 
 // cmd: <start|stop>
 func programOperate(cmd, name string) (err error, success bool) {
-	res, err := goreq.Request{
-		Method: "POST",
-		Uri:    cfg.Client.ServerURL + "/api/programs/" + name + "/" + cmd,
-	}.Do()
+	// res, err := goreq.Request{
+	// 	Method: "POST",
+	// 	Uri:    cfg.Client.ServerURL + "/api/programs/" + name + "/" + cmd,
+	// }.Do()
+
+	res, err := req.Post(cfg.Client.ServerURL + "/api/programs/" + name + "/" + cmd)
 	if err != nil {
 		return
 	}
 	var v = struct {
 		Status int `json:"status"`
 	}{}
-	if err = res.Body.FromJsonTo(&v); err != nil {
+	// if err = res.Body.FromJsonTo(&v); err != nil {
+	// 	return
+	// }
+	if err = res.ToJSON(&v); err != nil {
 		return
 	}
 	success = v.Status == 0

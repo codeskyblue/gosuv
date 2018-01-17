@@ -23,15 +23,18 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/codeskyblue/gosuv/pushover"
-	"github.com/codeskyblue/kexec"
 	"github.com/kennygrant/sanitize"
+	"github.com/lunny/dingtalk_webhook"
+	"github.com/natefinch/lumberjack"
 	"github.com/qiniu/log"
+	"github.com/soopsio/gosuv/pushover"
+	"github.com/soopsio/kexec"
 )
 
 type FSMState string
@@ -113,20 +116,32 @@ type Program struct {
 	StartRetries  int      `yaml:"start_retries" json:"startRetries"`
 	StartSeconds  int      `yaml:"start_seconds,omitempty" json:"startSeconds"`
 	StopTimeout   int      `yaml:"stop_timeout,omitempty" json:"stopTimeout"`
-	User          string   `yaml:"user,omitempty" json:"user"`
-	Notifications struct {
-		Pushover struct {
-			ApiKey string   `yaml:"api_key"`
-			Users  []string `yaml:"users"`
-		} `yaml:"pushover,omitempty"`
-	} `yaml:"notifications,omitempty" json:"-"`
-	WebHook struct {
-		Github struct {
-			Secret string `yaml:"secret"`
-		} `yaml:"github"`
-		Command string `yaml:"command"`
-		Timeout int    `yaml:"timeout"`
-	} `yaml:"webhook,omitempty" json:"-"`
+	retryCount    int
+	User          string        `yaml:"user,omitempty" json:"user"`
+	Notifications Notifications `yaml:"notifications,omitempty" json:"-"`
+	WebHook       WebHook       `yaml:"webhook,omitempty" json:"-"`
+}
+
+type Notifications struct {
+	Pushover struct {
+		ApiKey string   `yaml:"api_key"`
+		Users  []string `yaml:"users"`
+	} `yaml:"pushover,omitempty"`
+
+	Dingtalk struct {
+		Groups []struct {
+			Secret  string   `yaml:"secret"`
+			Mobiles []string `yaml:"mobile"`
+		} `yaml:"groups"`
+	} `yaml:"dingtalk,omitempty"`
+}
+
+type WebHook struct {
+	Github struct {
+		Secret string `yaml:"secret"`
+	} `yaml:"github"`
+	Command string `yaml:"command"`
+	Timeout int    `yaml:"timeout"`
 }
 
 func (p *Program) Check() error {
@@ -143,18 +158,44 @@ func (p *Program) Check() error {
 	return nil
 }
 
-func (p *Program) RunNotification() {
-	po := p.Notifications.Pushover
-	if po.ApiKey != "" && len(po.Users) > 0 {
-		for _, user := range po.Users {
-			err := pushover.Notify(pushover.Params{
-				Token:   po.ApiKey,
-				User:    user,
-				Title:   "gosuv",
-				Message: fmt.Sprintf("%s change to fatal", p.Name),
-			})
-			if err != nil {
-				log.Warnf("pushover error: %v", err)
+func (p *Program) RunNotification(state FSMState) {
+	notis := []Notifications{}
+	notis = append(notis, cfg.Notifications)
+	t := time.Now().Format("2006-01-02 15:04:05")
+	host := ""
+	if cfg.Server.Name != "" {
+		host = cfg.Server.Name
+	} else {
+		host, _ = os.Hostname()
+	}
+	msg := fmt.Sprintf("[%s] %s: \"%s\" changed: \"%s\"", t, host, p.Name, state)
+	if state == RetryWait {
+		msg += " retryCount:" + strconv.Itoa(p.retryCount)
+	}
+	for _, noti := range notis {
+		po := noti.Pushover
+		if po.ApiKey != "" && len(po.Users) > 0 {
+			for _, user := range po.Users {
+				err := pushover.Notify(pushover.Params{
+					Token:   po.ApiKey,
+					User:    user,
+					Title:   "gosuv",
+					Message: msg,
+				})
+				if err != nil {
+					log.Warnf("pushover error: %v", err)
+				}
+			}
+		}
+
+		pw := noti.Dingtalk
+		if len(pw.Groups) > 0 {
+			for _, group := range pw.Groups {
+				ding := dingtalk.NewWebhook(group.Secret)
+				err := ding.SendTextMsg(msg, false, group.Mobiles...)
+				if err != nil {
+					log.Error("钉钉通知失败:", err)
+				}
 			}
 		}
 	}
@@ -172,7 +213,7 @@ type Process struct {
 	Stdout     *QuickLossBroadcastWriter `json:"-"`
 	Stderr     *QuickLossBroadcastWriter `json:"-"`
 	Output     *QuickLossBroadcastWriter `json:"-"`
-	OutputFile *os.File                  `json:"-"`
+	OutputFile io.WriteCloser            `json:"-"`
 	stopC      chan syscall.Signal
 	retryLeft  int
 	Status     string `json:"status"`
@@ -184,13 +225,23 @@ type Process struct {
 func (p *Process) buildCommand() *kexec.KCommand {
 	cmd := kexec.CommandString(p.Command)
 	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
-	logDir := filepath.Join(defaultConfigDir, "log", sanitize.Name(p.Name))
+	logDir := filepath.Join(defaultGosuvDir, "log", sanitize.Name(p.Name))
 	if !IsDir(logDir) {
 		os.MkdirAll(logDir, 0755)
 	}
 	var fout io.Writer
 	var err error
-	p.OutputFile, err = os.OpenFile(filepath.Join(logDir, "output.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	// p.OutputFile, err = os.OpenFile(filepath.Join(logDir, "output.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	// p.OutputFile = NewRotate(filepath.Join(logDir, "output.log"))
+	p.OutputFile = &lumberjack.Logger{
+		Filename:   filepath.Join(logDir, "output.log"),
+		MaxSize:    1024,
+		MaxAge:     14,
+		MaxBackups: 14,
+		Compress:   false,
+		LocalTime:  true,
+	}
+
 	if err != nil {
 		log.Warn("create stdout log failed:", err)
 		fout = ioutil.Discard
@@ -241,6 +292,7 @@ func (p *Process) waitNextRetry() {
 	if p.retryLeft <= 0 {
 		p.retryLeft = p.StartRetries
 		p.SetState(Fatal)
+		p.cmd = nil
 		return
 	}
 	p.retryLeft -= 1
@@ -259,14 +311,17 @@ func (p *Process) stopCommand() {
 	if p.cmd == nil {
 		return
 	}
+
 	p.SetState(Stopping)
 	if p.cmd.Process != nil {
 		p.cmd.Process.Signal(syscall.SIGTERM) // TODO(ssx): add it to config
 	}
 	select {
 	case <-GoFunc(p.cmd.Wait):
+		p.RunNotification(FSMState("quit normally"))
 		log.Printf("program(%s) quit normally", p.Name)
 	case <-time.After(time.Duration(p.StopTimeout) * time.Second): // TODO: add 3s to config
+		p.RunNotification(FSMState("terminate all"))
 		log.Printf("program(%s) terminate all", p.Name)
 		p.cmd.Terminate(syscall.SIGKILL) // cleanup
 	}
@@ -299,8 +354,11 @@ func (p *Process) startCommand() {
 	if err := p.cmd.Start(); err != nil {
 		log.Warnf("program %s start failed: %v", p.Name, err)
 		p.SetState(Fatal)
+		p.cmd = nil
 		return
 	}
+	// 如果是running状态，重置 retryLeft
+	p.retryLeft = p.StartRetries
 	go func() {
 		errC := GoFunc(p.cmd.Wait)
 		startTime := time.Now()
@@ -312,6 +370,8 @@ func (p *Process) startCommand() {
 			if time.Since(startTime) < time.Duration(p.StartSeconds)*time.Second {
 				if p.retryLeft == p.StartRetries { // If first time quit so fast, just set to fatal
 					p.SetState(Fatal)
+					p.cmd = nil
+					p.RunNotification(Fatal)
 					log.Printf("program(%s) exit too quick, status -> fatal", p.Name)
 					return
 				}
@@ -338,11 +398,13 @@ func NewProcess(pg Program) *Process {
 	}
 	pr.StateChange = func(_, newStatus FSMState) {
 		pr.Status = string(newStatus)
-
 		// TODO: status need to filter with config, not hard coded.
-		if newStatus == Fatal {
-			go pr.Program.RunNotification()
+		// if newStatus == Fatal {
+		if newStatus == RetryWait {
+			pr.Program.retryCount++
 		}
+		go pr.Program.RunNotification(newStatus)
+		// }
 	}
 	if pr.StartSeconds <= 0 {
 		pr.StartSeconds = 3

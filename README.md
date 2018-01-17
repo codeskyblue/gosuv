@@ -97,14 +97,23 @@ Example config.yaml
 ```
 server:
   httpauth:
-    enabled: false
-    username: uu
-    password: pp
-  addr: :11313
+    enabled: true
+    username: admin
+    password: admin
+  addr: :8083
+  name: 10.10.99.177
+  master: ""
+notifications:
+  dingtalk:
+    groups:
+    - secret: c1b8032******************aa736a
+      mobile:
+      - "153********"
 client:
-  server_url: http://localhost:11313
+  server_url: http://admin:admin@localhost:8083
 ```
 
+master 的支持来自  https://github.com/ihaiker/distributed-gosuv
 Logs can be found in `$HOME/.gosuv/log/`
 
 Edit config file(default located in `$HOME/.gosuv/programs.yml`) and run `gosuv reload` will take effect immediately.

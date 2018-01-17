@@ -2,193 +2,191 @@
 <html>
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>gosuv</title>
-  <link rel="shortcut icon" type="image/png" href="/res/images/favicon.ico" />
-  <link rel="stylesheet" type="text/css" href="/res/bootstrap-3.3.5/css/bootstrap.min.css">
-  <link rel="stylesheet" type="text/css" href="/res/font-awesome-4.6.3/css/font-awesome.min.css">
-  <link rel="stylesheet" type="text/css" href="/res/css/style.css">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>gosuv</title>
+    <link rel="shortcut icon" type="image/png" href="/res/images/favicon.ico"/>
+    <link rel="stylesheet" type="text/css" href="/res/bootstrap-3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/res/font-awesome-4.6.3/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/res/css/style.css">
 </head>
 
 <body id="app">
-  <nav class="navbar navbar-inverse">
+<nav class="navbar navbar-inverse">
     <div class="container">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">Go Supervisor</a>
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                        data-target="#bs-example-navbar-collapse-2">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">Go Supervisor</a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
+                <ul class="nav navbar-nav">
+                </ul>
+                <ul id="nav-right-bar" class="nav navbar-nav navbar-right">
+                </ul>
+            </div>
         </div>
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
-          <ul class="nav navbar-nav">
-          </ul>
-          <ul id="nav-right-bar" class="nav navbar-nav navbar-right">
-          </ul>
-        </div>
-      </div>
     </div>
-  </nav>
-  <div class="container">
+</nav>
+<div class="container">
     <div class="col-md-12">
-      <h1>{{name}}</h1>
-      <p>
-        pid: {{pid}}
-        <br> sub pids: {{childPids.join(',')}}
-      </p>
-      <p>
-        <br> status: running
-        <br> time: 2016/09/07 12:00:00
-      </p>
+        <h1>{{name}}</h1>
+        <p>
+            pid: {{pid}}
+            <br> sub pids: {{childPids.join(',')}}
+        </p>
+        <p>
+            <br> status: running
+            <br> time: 2016/09/07 12:00:00
+        </p>
     </div>
     <div class="col-md-12">
-      <div id="chart-cpu" style="width: 100%;height:250px;"></div>
-      <div id="chart-mem" style="width: 100%;height:250px;"></div>
+        <div id="chart-cpu" style="width: 100%;height:250px;"></div>
+        <div id="chart-mem" style="width: 100%;height:250px;"></div>
     </div>
-  </div>
-  <script type="text/javascript">
-  var name = "[[.Name]]";
-  </script>
-  <script src="/res/js/jquery-3.1.0.min.js"></script>
-  <script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>
-  <!-- <script src="/res/js/moment.min.js"></script> -->
-  <!-- <script src="/res/js/underscore-min.js"></script> -->
-  <script src="/res/js/vue-1.0.min.js"></script>
-  <script src="/res/js/echarts.min.js"></script>
-  <script src="/res/js/common.js"></script>
-  <script src="/res/js/settings.js"></script>
-  <script type="text/javascript">
-  // 基于准备好的dom，初始化echarts实例
-  var chartCpu = echarts.init(document.getElementById('chart-cpu'));
-  var chartMem = echarts.init(document.getElementById('chart-mem'));
+</div>
+<script type="text/javascript">
+    var name = "[[.Name]]";
+    var slave = "[[.Slave]]"
+</script>
+<script src="/res/js/jquery-3.1.0.min.js"></script>
+<script src="/res/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="/res/js/vue-1.0.min.js"></script>
+<script src="/res/js/echarts.min.js"></script>
+<script src="/res/js/common.js"></script>
+<script src="/res/js/settings.js"></script>
+<script type="text/javascript">
+    // 基于准备好的dom，初始化echarts实例
+    var chartCpu = echarts.init(document.getElementById('chart-cpu'));
+    var chartMem = echarts.init(document.getElementById('chart-mem'));
 
-  // 指定图表的配置项和数据
+    // 指定图表的配置项和数据
 
-  var cpuData = [];
-  for (var i = maxDataCount; i > 0; i -= 1) {
-    cpuData.push({
-      value: [new Date().getTime() - 1000 * i, 0]
-    })
-  }
+    var cpuData = [];
+    for (var i = maxDataCount; i > 0; i -= 1) {
+        cpuData.push({
+            value: [new Date().getTime() - 1000 * i, 0]
+        })
+    }
 
-  var option = {
-    title: {
-      text: 'CPU'
-    },
-    toolbox: {
-      feature: {
-        saveAsImage: {}
-      }
-    },
-    tooltip: {
-      trigger: 'axis',
-      // formatter: function(params) {
-      // params = params[0];
-      // console.log(params)
-      // var date = new Date(params.value[0]);
-      // return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
-      // },
-      axisPointer: {
-        animation: false
-      }
-    },
-    legend: {
-      data: ['Total']
-    },
-    xAxis: {
-      type: 'time',
-      splitLine: {
-        show: false
-      }
-    },
-    yAxis: {
-      type: 'value',
-      min: 0,
-      max: 100,
-      axisLabel: {
-        formatter: '{value} %'
-      },
-    },
-    series: [{
-      name: 'Total',
-      type: 'line',
-      data: cpuData,
-      animation: false,
-      smooth: true,
-      areaStyle: {
-        normal: {}
-      },
-    }]
-  }
+    var option = {
+        title: {
+            text: 'CPU'
+        },
+        toolbox: {
+            feature: {
+                saveAsImage: {}
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            // formatter: function(params) {
+            // params = params[0];
+            // console.log(params)
+            // var date = new Date(params.value[0]);
+            // return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
+            // },
+            axisPointer: {
+                animation: false
+            }
+        },
+        legend: {
+            data: ['Total']
+        },
+        xAxis: {
+            type: 'time',
+            splitLine: {
+                show: false
+            }
+        },
+        yAxis: {
+            type: 'value',
+            min: 0,
+            max: 100,
+            axisLabel: {
+                formatter: '{value} %'
+            },
+        },
+        series: [{
+            name: 'Total',
+            type: 'line',
+            data: cpuData,
+            animation: false,
+            smooth: true,
+            areaStyle: {
+                normal: {}
+            },
+        }]
+    }
 
-  chartCpu.setOption(option);
+    chartCpu.setOption(option);
 
 
-  var memData = [];
-  for (var i = maxDataCount; i > 0; i -= 1) {
-    memData.push({
-      value: [new Date().getTime() - 1000 * i, 0]
-    })
-  }
-  var option = {
-    title: {
-      text: 'Memory'
-    },
-    toolbox: {
-      feature: {
-        saveAsImage: {}
-      }
-    },
-    tooltip: {
-      trigger: 'axis',
-      formatter: function(params) {
-        params = params[0];
-        // console.log(params)
-        var date = new Date(params.value[0]);
-        return formatBytes(params.value[1]);
-        // return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
-      },
-      axisPointer: {
-        animation: false
-      }
-    },
-    legend: {
-      data: ['RSS']
-    },
-    xAxis: {
-      type: 'time',
-      splitLine: {
-        show: false
-      }
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: {
-        formatter: function(value, index) {
-          return formatBytes(value);
-        }
-      },
-    },
-    series: [{
-      name: 'RSS',
-      type: 'line',
-      data: memData,
-      animation: false,
-      smooth: true,
-      areaStyle: {
-        normal: {
-          color: "gray",
-        }
-      },
-    }]
-  }
-  chartMem.setOption(option);
-  </script>
+    var memData = [];
+    for (var i = maxDataCount; i > 0; i -= 1) {
+        memData.push({
+            value: [new Date().getTime() - 1000 * i, 0]
+        })
+    }
+    var option = {
+        title: {
+            text: 'Memory'
+        },
+        toolbox: {
+            feature: {
+                saveAsImage: {}
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: function (params) {
+                params = params[0];
+                // console.log(params)
+                var date = new Date(params.value[0]);
+                return formatBytes(params.value[1]);
+                // return date + date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' : ' + params.value[1];
+            },
+            axisPointer: {
+                animation: false
+            }
+        },
+        legend: {
+            data: ['RSS']
+        },
+        xAxis: {
+            type: 'time',
+            splitLine: {
+                show: false
+            }
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: {
+                formatter: function (value, index) {
+                    return formatBytes(value);
+                }
+            },
+        },
+        series: [{
+            name: 'RSS',
+            type: 'line',
+            data: memData,
+            animation: false,
+            smooth: true,
+            areaStyle: {
+                normal: {
+                    color: "gray",
+                }
+            },
+        }]
+    }
+    chartMem.setOption(option);
+</script>
 </body>
-</header>
-
 </html>
