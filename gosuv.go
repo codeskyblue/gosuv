@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 
-	// "github.com/franela/goreq"
 	"github.com/imroc/req"
 	"github.com/qiniu/log"
 	"github.com/urfave/cli"
@@ -32,20 +31,16 @@ type TagInfo struct {
 
 func githubLatestVersion(repo, name string) (tag TagInfo, err error) {
 	githubURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", repo, name)
-	// req := goreq.Request{Uri: githubURL}
 	r := req.New()
 	h := req.Header{}
 	ghToken := os.Getenv("GITHUB_TOKEN")
 	if ghToken != "" {
-		// req.AddHeader("Authorization", "token "+ghToken)
 		h["Authorization"] = "token " + ghToken
 	}
-	// res, err := req.Do()
 	res, err := r.Get(githubURL, h)
 	if err != nil {
 		return
 	}
-	// err = res.Body.FromJsonTo(&tag)
 	err = res.ToJSON(&tag)
 	return
 }
