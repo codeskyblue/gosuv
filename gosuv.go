@@ -46,7 +46,7 @@ func githubLatestVersion(repo, name string) (tag TagInfo, err error) {
 		return
 	}
 	// err = res.Body.FromJsonTo(&tag)
-	err := res.ToJSON(&tag)
+	err = res.ToJSON(&tag)
 	return
 }
 

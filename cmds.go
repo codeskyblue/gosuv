@@ -103,7 +103,10 @@ func actionStatus(c *cli.Context) error {
 		Program Program `json:"program"`
 		Status  string  `json:"status"`
 	}, 0)
-	if err := res.Body.FromJsonTo(&programs); err != nil {
+	// if err := res.Body.FromJsonTo(&programs); err != nil {
+	// 	return err
+	// }
+	if err := res.ToJSON(&programs); err != nil {
 		return err
 	}
 	format := "%-23s\t%-8s\n"
@@ -128,7 +131,10 @@ func programOperate(cmd, name string) (err error, success bool) {
 	var v = struct {
 		Status int `json:"status"`
 	}{}
-	if err = res.Body.FromJsonTo(&v); err != nil {
+	// if err = res.Body.FromJsonTo(&v); err != nil {
+	// 	return
+	// }
+	if err = res.ToJSON(&v); err != nil {
 		return
 	}
 	success = v.Status == 0
