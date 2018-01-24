@@ -29,6 +29,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/axgle/pinyin"
 	"github.com/kennygrant/sanitize"
 	"github.com/lunny/dingtalk_webhook"
 	"github.com/natefinch/lumberjack"
@@ -225,7 +226,7 @@ type Process struct {
 func (p *Process) buildCommand() *kexec.KCommand {
 	cmd := kexec.CommandString(p.Command)
 	// cmd := kexec.Command(p.Command[0], p.Command[1:]...)
-	logDir := filepath.Join(defaultGosuvDir, "log", sanitize.Name(p.Name))
+	logDir := filepath.Join(defaultGosuvDir, "log", sanitize.Name(pinyin.Convert(p.Name)))
 	if !IsDir(logDir) {
 		os.MkdirAll(logDir, 0755)
 	}
@@ -308,6 +309,7 @@ func (p *Process) waitNextRetry() {
 }
 
 func (p *Process) stopCommand() {
+	fmt.Println(p.Command, "###", p.Name, "stopCommand 1111111111111111")
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	defer p.SetState(Stopped)
@@ -317,8 +319,20 @@ func (p *Process) stopCommand() {
 
 	p.SetState(Stopping)
 	if p.cmd.Process != nil {
-		p.cmd.Process.Signal(syscall.SIGTERM) // TODO(ssx): add it to config
+		stopch := make(chan bool)
+		go func() {
+			p.cmd.Process.Signal(syscall.SIGTERM)
+			stopch <- true
+		}()
+		select {
+		case <-stopch: // TODO(ssx): add it to config
+			log.Println(p.Name, "停止完成")
+		case <-time.After(10 * time.Second):
+			log.Println(p.Name, "停止超时，强制 kill")
+			p.cmd.Process.Signal(syscall.SIGKILL)
+		}
 	}
+	fmt.Println(p.Command, "###", p.Name, "stopCommand 2222222222222222222")
 	select {
 	case <-GoFunc(p.cmd.Wait):
 		p.RunNotification(FSMState("quit normally"))
@@ -340,6 +354,7 @@ func (p *Process) stopCommand() {
 		p.OutputFile = nil
 	}
 	p.cmd = nil
+	fmt.Println(p.Command, "###", p.Name, "3333333333333333333333")
 }
 
 func (p *Process) IsRunning() bool {
