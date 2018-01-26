@@ -309,7 +309,6 @@ func (p *Process) waitNextRetry() {
 }
 
 func (p *Process) stopCommand() {
-	fmt.Println(p.Command, "###", p.Name, "stopCommand 1111111111111111")
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	defer p.SetState(Stopped)
@@ -332,7 +331,6 @@ func (p *Process) stopCommand() {
 			p.cmd.Process.Signal(syscall.SIGKILL)
 		}
 	}
-	fmt.Println(p.Command, "###", p.Name, "stopCommand 2222222222222222222")
 	select {
 	case <-GoFunc(p.cmd.Wait):
 		p.RunNotification(FSMState("quit normally"))
@@ -354,7 +352,6 @@ func (p *Process) stopCommand() {
 		p.OutputFile = nil
 	}
 	p.cmd = nil
-	fmt.Println(p.Command, "###", p.Name, "3333333333333333333333")
 }
 
 func (p *Process) IsRunning() bool {
