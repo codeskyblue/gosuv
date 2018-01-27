@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -102,10 +103,18 @@ func (cluster *Cluster) cmdJoinCluster(w http.ResponseWriter, r *http.Request) {
 
 //获取分布式系统下所有的内容
 func (cluster *Cluster) cmdQueryDistributedPrograms(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	slaves := []string{}
+	for _, v := range cluster.slaves.GetALL() {
+		if slave, ok := v.(string); ok {
+			slaves = append(slaves, slave)
+		}
+	}
+	sort.Strings(slaves)
 	jsonOut := "{"
 	idx := 0
-	for _, v := range cluster.slaves.GetALL() {
-		slave := v.(string)
+	for _, slave := range slaves {
 		reqUrl := fmt.Sprintf("http://%s/api/programs", slave)
 		if body, err := cluster.requestSlave(reqUrl, http.MethodGet, nil); err == nil {
 			jsonOut += fmt.Sprintf("\"%s\":%s", slave, body)
@@ -116,7 +125,6 @@ func (cluster *Cluster) cmdQueryDistributedPrograms(w http.ResponseWriter, r *ht
 		idx += 1
 	}
 	jsonOut += "}"
-	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(jsonOut))
 }
 
@@ -236,6 +244,6 @@ func newDistributed(suv *Supervisor, hdlr http.Handler) error {
 }
 
 var cluster = Cluster{
-	slaves: gcache.New(10).LRU().Expiration(time.Second * 3).Build(),
+	slaves: gcache.New(1000).LRU().Expiration(time.Second * 3).Build(),
 	client: new(http.Client),
 }
