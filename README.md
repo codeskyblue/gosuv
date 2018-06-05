@@ -169,5 +169,8 @@ This part is set in the `programs.yml`, take look the example
       command: git pull origin master
 ```
 
+## Alternative
+- Go implementation of supervisor <https://github.com/ochinchina/supervisord>
+
 ## LICENSE
 [MIT](LICENSE)
